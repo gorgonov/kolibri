@@ -11,11 +11,8 @@ namespace console\helpers;
 require_once('vendor/autoload.php');
 
 use console\models\ArSite;
-use Url;
 use Yii;
 use DiDom\Document;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use common\traits\LogPrint;
 
 class ParseForvardmebel
@@ -33,6 +30,11 @@ class ParseForvardmebel
     private $minid;
     private $maxid;    // массив ссылок на продукты
     private $spreadsheet;    // массив ссылок на страницы с продуктами
+    private $cntProducts;
+    /**
+     * @var mixed
+     */
+    private $site_id;
 
     /**
      * ParseVmrbel constructor.
@@ -63,7 +65,6 @@ class ParseForvardmebel
 
     public function run()
     {
-        $cntProducts = 0;
         // 1. Соберем ссылки на товары
         $this->addProducts();
 
@@ -83,12 +84,15 @@ class ParseForvardmebel
      */
     private function getBaseUrl(string $link): string
     {
-        extract(parse_url($link));
-        return $scheme . '://' . $host;
+//        extract(parse_url($link)); // плохой код
+        $aUrl = parse_url($link);
+
+        return $aUrl['scheme'] . '://' . $aUrl['host'];
     }
 
     private function addProducts()
     {
+        $cat = 0; // todo нужна ли категория?
         $link = $this->link;
         $this->baseUrl = $this->getBaseUrl($link);
 
@@ -107,7 +111,7 @@ class ParseForvardmebel
                 $i++;
 
                 $link = $this->baseUrl . $el->attr('href');
-                $this->print("Обрабатываем страницу: " . $link, "Категория $cat. Продукт $i/$countProducts");
+                $this->print("Обрабатываем страницу: " . $link . "Категория $cat. Продукт $i/$countProducts");
                 $this->aProducts[] = [
                     'category' => 0,
                     'link' => $link,
@@ -179,12 +183,10 @@ class ParseForvardmebel
             list($propName,$treevalue) = explode('_',$item->attr('data-treevalue'));
             $propName = 'PROP_' . $propName;
 
-            echo 'propName=';
-            print_r($propName);
+            echo 'propName=';print_r($propName);
             echo str_repeat('-',60);
 
-            echo 'aButton=';
-            print_r($aButton);
+            echo 'aButton=';print_r($aButton);
             echo str_repeat('-',60);
 
             // найдем цены
@@ -287,7 +289,6 @@ class ParseForvardmebel
                 if ($th) {
                     $td = $th->nextSibling("td"); // $td->parent()->find('td')[1]->text();
                     $aTmp[] = $td->text(); // $td->parent()->find('td')[1]->text();
-                } else {
                 }
             }
             return $aTmp;

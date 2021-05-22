@@ -8,29 +8,28 @@
 
 namespace console\helpers;
 
-require_once('vendor/autoload.php');
-
 use console\models\ArSite;
+use DiDom\Exceptions\InvalidSelectorException;
+use PhpOffice\PhpSpreadsheet\Exception;
+use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Yii;
 use DiDom\Document;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use common\traits\LogPrint;
 
 class ParseDenx
 {
     use LogPrint;
 
-    protected $oProductsSheet;
-    protected $aProducts = [];
-    protected $aGroupProducts = [];
-    private $id;
-    private $name;
+    protected array $aProducts = [];
+    protected array $aGroupProducts = [];
+    private string $name;
     // объекты
-    private $link;
-    private $minid;
-    private $maxid;    // массив ссылок на продукты
-    private $spreadsheet;    // массив ссылок на страницы с продуктами
+    private string $link;
+    private int $minid;
+    private int $maxid;
+    private Spreadsheet $spreadsheet;
+    private int $site_id;
 
     /**
      * ParseDenx constructor.
@@ -43,7 +42,7 @@ class ParseDenx
         $this->minid = $site["minid"];
         $this->maxid = $site["maxid"];
         $linksFileName = __DIR__ . '/../../../XLSX/DenxLinks.xlsx';
-        $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+        $reader = new Xlsx();
         $this->spreadsheet = $reader->load($linksFileName);
 
         $messageLog = [
@@ -57,29 +56,28 @@ class ParseDenx
         $this->print("Создался ParseDenx");
     }
 
+    /**
+     * @throws \yii\db\Exception|Exception
+     * @throws InvalidSelectorException
+     */
     public function run()
     {
         $cntProducts = 0;
         // 1. Обработаем 1 лист - ссылки на группы товаров
         $this->runGroupProducts();
-//        echo "aGroupProducts=";
-//        print_r($this->aGroupProducts);
 
         // 2. Обработаем 2 лист - ссылки на товары
         $this->runProducts();
-//        echo "\naProducts=";
-//        print_r($this->aProducts);
-//        die();
+
         // 3. Добавим товары со страниц с группами товаров
         $this->addProducts();
+
         // 4. Парсим товары, пишем в БД
         $product_id = $this->minid;
         foreach ($this->aProducts as $el) {
-//            $lnk = $this->link . $el['link'];
             $lnk = $el['link'];
             $cat = $el['category'];
             $productInfo = $this->getProductInfo($lnk);
-
             $productInfo['site_id'] = $this->site_id;
             $productInfo['link'] = $lnk;
             $productInfo['category'] = $cat;
@@ -87,9 +85,7 @@ class ParseDenx
             $productInfo['model'] = 'Доставим через 3-7 дней';
             $productInfo['manufacturer'] = 'г.Барнаул';
             $productInfo['subtract'] = true;
-//            $productInfo['subtract'] = Если есть в наличии то true если нет то false
 
-//            print_r($productInfo);
             ArSite::addProduct($productInfo);
             $cntProducts++;
         }
@@ -101,6 +97,10 @@ class ParseDenx
         $this->endprint();
     }
 
+    /**
+     * Обработаем 1 лист - ссылки на группы товаров
+     * @throws Exception
+     */
     private function runGroupProducts()
     {
         $worksheet = $this->spreadsheet->setActiveSheetIndex(0);
@@ -111,7 +111,7 @@ class ParseDenx
 
                 $category = ParseUtil::dotToComma($category);
                 $link = $worksheet->getCell("B" . $row)->getValue();
-                $this->print("Добавляем страницу: {$link}");
+                $this->print("Добавляем страницу: $link");
                 $this->aGroupProducts[] = [
                     'category' => $category,
                     'link' => $link
@@ -119,11 +119,12 @@ class ParseDenx
             }
         }
         $this->aGroupProducts = ParseUtil::unique_multidim_array($this->aGroupProducts, 'link');
-//        print_r($this->aGroupProducts);
-//        die();
     }
 
-
+    /**
+     * Обработаем 2 лист - ссылки на товары
+     * @throws Exception
+     */
     private function runProducts()
     {
         $worksheet = $this->spreadsheet->setActiveSheetIndex(1);
@@ -137,9 +138,12 @@ class ParseDenx
                 'link' => $link
             ];
         }
-//        print_r($this->aProducts);
     }
 
+    /**
+     * Добавим товары со страниц с группами товаров
+     * @throws InvalidSelectorException
+     */
     private function addProducts()
     {
         foreach ($this->aGroupProducts as $item) { // на странице ссылки на продукты
@@ -149,6 +153,9 @@ class ParseDenx
         }
     }
 
+    /**
+     * @throws InvalidSelectorException
+     */
     private function getProducts($link, $cat)
     {
         $this->print("Качаем страничку $link.");
@@ -166,7 +173,7 @@ class ParseDenx
                 $i++;
 
                 $link = $this->link . $el->attr('href');
-                $this->print("Обрабатываем страницу: " . $link, "Категория $cat. Продукт $i/$countProducts");
+                $this->print("Обрабатываем страницу: " . $link . "Категория $cat. Продукт $i/$countProducts");
                 $this->aProducts[] = [
                     'category' => $cat,
                     'link' => $link
@@ -175,6 +182,9 @@ class ParseDenx
         }
     }
 
+    /**
+     * @throws InvalidSelectorException
+     */
     protected function getProductInfo($link)
     {
         $this->print("Обрабатываем страницу: $link");
@@ -185,7 +195,7 @@ class ParseDenx
 
         $ar = array();
 
-        $ar["topic"] = $this->normalText($doc->first('.site-main__inner h1')->innerHtml()); // Заголовок товара
+        $ar["topic"] = trim($doc->first('.site-main__inner h1')->innerHtml()); // Заголовок товара
 
         // артикул будет рассчитан при записи в таблицу
 
@@ -209,7 +219,7 @@ class ParseDenx
         }
         $ar["aImgLink"] = $aImgLink;
 
-        $ar["title"] = $this->normalText($doc->first('title')->text()); // title страницы
+        $ar["title"] = trim($doc->first('title')->text()); // title страницы
 
         // формируем таблицу с характеристиками продукта c разметкой
         $tbl = $doc->first('.shop2-product-options')->html();
@@ -219,7 +229,7 @@ class ParseDenx
         $re = '/(\d+)х(\d+)х(\d+)\s*мм/m';
         $str = $tbl . $description;
 
-        if (preg_match_all($re, $str, $matches, PREG_SET_ORDER, 0)) {
+        if (preg_match_all($re, $str, $matches, PREG_SET_ORDER)) {
             $aTmp["Ширина"] = $matches[0][1];
             $aTmp["Высота"] = $matches[0][2];
             $aTmp["Глубина"] = $matches[0][3];
@@ -227,7 +237,7 @@ class ParseDenx
         // 2. Найдем размеры в формате Ширина:840 мм; Высота:736 мм; Глубина:500 мм.
         if (!isset($aTmp)) {
             $re = '/Ширина\s*[:-]\s*(\d+)[м;\s]*Высота\s*[:-]\s*(\d+)[м;\s]*Глубина\s*[:-]\s*(\d+)[м;\s]*/m';
-            if (preg_match_all($re, $str, $matches, PREG_SET_ORDER, 0)) {
+            if (preg_match_all($re, $str, $matches, PREG_SET_ORDER)) {
                 $aTmp["Ширина"] = $matches[0][1];
                 $aTmp["Высота"] = $matches[0][2];
                 $aTmp["Глубина"] = $matches[0][3];
@@ -245,21 +255,6 @@ class ParseDenx
         return $ar;
     }
 
-    protected function normalText($s)
-    {
-        // удалим из названия текст "Esandwich"
-        $s = trim($s);
-        // TODO: убрать?
-        $b[] = 'Esandwich.ru';
-        $b[] = 'Esandwich';
-        $b[] = 'барнаул';
-        $b[] = 'есэндвич';
-
-        $s = ParseUtil::utf8_replace($b, '', $s, true);
-
-        return $s;
-    }
-
     /**
      * возвращает строку - описание продукта из таблицы
      *
@@ -275,11 +270,14 @@ class ParseDenx
      * </table>
      * @param $attrList - список атрибутов, значения которых надо найти (в первой колонке th)
      * @return array - атрибуты продукта
+     * @throws InvalidSelectorException
      */
-    protected function getAttr($table, $attrList)
+    protected function getAttr($table, $attrList): array
     {
         if (is_string($table)) {
             $table = new Document($table);
+        } else {
+            return [];
         }
 
         if (is_array($attrList)) {
@@ -287,40 +285,19 @@ class ParseDenx
             foreach ($attrList as $str) {
                 $th = $table->first("tr>th:contains('" . $str . "')");
                 if ($th) {
-                    $td = $th->nextSibling("td"); // $td->parent()->find('td')[1]->text();
-                    $aTmp[] = $td->text(); // $td->parent()->find('td')[1]->text();
-                } else {
+                    $td = $th->nextSibling("td");
+                    $aTmp[] = $td->text();
                 }
             }
             return $aTmp;
         } else {
             $th = $table->first("tr>th:contains('" . $attrList . "')");
             if ($th) {
-                return $th->nextSibling()->text();
+                return [$th->nextSibling()->text()];
             } else {
-                return "";
+                return [];
             }
         }
-    }
-
-    protected function getSize($sTmp)
-    {
-        // убираем неразрывные пробелы
-        $sTmp = str_replace(array(" ", chr(0xC2) . chr(0xA0)), ' ', $sTmp);
-        print_r("sTmp=" . $sTmp . "\n");
-        $aTmp = explode(" ", $sTmp);
-//    echo '<pre>';
-//    var_dump($aTmp);
-//    echo '</pre>';
-        $aSize = array();
-        foreach ($aTmp as $i => $el) {
-            if ((int)$el > 0) {
-                $key = mb_convert_case($aTmp[$i - 1], 2); // первый символ - заглавный
-                $key = preg_replace("/:/i", "", $key);
-                $aSize[$key] = $el;
-            }
-        }
-        return $aSize;
     }
 
 }

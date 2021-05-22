@@ -20,7 +20,6 @@ class ArserController extends Controller
      */
     public function actionIndex(string $modul = 'get')
     {
-
         if (is_integer($modul)) {
             $site = ArSite::getSiteById($modul);
         }
@@ -34,12 +33,12 @@ class ArserController extends Controller
         }
 
         if (!isset($site)) {
-            echo 'Site ' . $modul . ' not found!';
+            echo 'Site ' . $modul . ' not found!' . PHP_EOL;
             die();
         }
 
         if (!$site) {
-            echo 'Нет сайтов для парсинга!';
+            echo 'Нет сайтов для парсинга!' . PHP_EOL;
             die();
         }
 
@@ -56,6 +55,5 @@ class ArserController extends Controller
                 ArSite::setStatus($site["id"], 'new');
             }
         }
-
     }
 }

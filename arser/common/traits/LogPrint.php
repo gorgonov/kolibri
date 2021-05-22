@@ -9,7 +9,7 @@ trait LogPrint
     /**
      * @var float время начала выполнения скрипта
      */
-    private static $time_start = .0;
+    private static float $time_start = .0;
 
     /**
      * Начало выполнения
@@ -21,13 +21,11 @@ trait LogPrint
 
     /**
      * Разница между текущей меткой времени и меткой self::$time_start
-     * @return float
+     * @return string
      */
-    static function finish()
+    static function finish(): string
     {
-//        $tm = microtime(true) - self::$time_start;
         $tm = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
-//        $tm = 13560;
         $hour = floor($tm/3600);
         $sec = $tm - ($hour*3600);
         $min = floor($sec/60);
@@ -37,13 +35,21 @@ trait LogPrint
 
     }
 
-    public function getLogName()
+    /**
+     * Возвращает имя лога (соответствует имени модуля парсера)
+     * @return string
+     */
+    public function getLogName(): string
     {
         $array = explode('\\', __CLASS__);
         $a = $array[count($array) - 1];
         return Yii::getAlias('@runtime') . '/logs/' . $a . '.log';
     }
 
+    /**
+     * Выводит в лог строку с таймстампом
+     * @param string $message
+     */
     public function print(string $message)
     {
         $dt = date("d.m.Y H:i:s");
@@ -52,6 +58,9 @@ trait LogPrint
         fclose($fd);
     }
 
+    /**
+     * Выводит время работы скрипта (строку) в лог
+     */
     public function endprint()
     {
         $dt = date("d.m.Y H:i:s");
@@ -60,6 +69,9 @@ trait LogPrint
         fclose($fd);
     }
 
+    /**
+     * Выводит в лог время старта скрипта
+     */
     public function reprint()
     {
         $dt = date("d.m.Y H:i:s");
