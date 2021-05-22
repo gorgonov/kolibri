@@ -2,9 +2,9 @@
 
 namespace console\controllers;
 
+use Throwable;
 use yii\console\Controller;
 use console\models\ArSite;
-use yii\debug\panels\DumpPanel;
 
 // usage: yii.bat arser <modulName>
 
@@ -16,7 +16,7 @@ class ArserController extends Controller
      * action default
      *
      * @param string $modul
-     * @throws \Throwable
+     * @throws Throwable
      */
     public function actionIndex(string $modul = 'get')
     {
@@ -57,6 +57,5 @@ class ArserController extends Controller
             }
         }
 
-        return;
     }
 }
