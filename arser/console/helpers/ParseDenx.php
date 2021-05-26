@@ -24,7 +24,6 @@ class ParseDenx
     protected array $aProducts = [];
     protected array $aGroupProducts = [];
     private string $name;
-    // объекты
     private string $link;
     private int $minid;
     private int $maxid;

@@ -8,59 +8,59 @@ class ControllerExtensionModuleArserSite extends Controller
     {
         $res = $this->db->query(
             "CREATE TABLE IF NOT EXISTS `ar_site` (" .
-                "`id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID'," .
-                "`name` varchar(30) NOT NULL COMMENT 'Наименование'," .
-                "`link` varchar(255) NOT NULL COMMENT 'Базовая ссылка'," .
-                "`modulname` varchar(255) NOT NULL COMMENT 'Имя модуля обработки'," .
-                "`minid` int unsigned NOT NULL COMMENT 'Стартовый id продукта'," .
-                "`maxid` int unsigned NOT NULL COMMENT 'Финишный id продукта'," .
-                "`mult` decimal(4,2) unsigned NOT NULL COMMENT 'Множитель'," .
-                "`status` enum('ok','new','del','price','get','parse') NOT NULL COMMENT 'ok,new,del,price,get,parse'," .
-                "`message` varchar(255) NOT NULL," .
-                "`productcount` decimal(10,0) NOT NULL DEFAULT '0' COMMENT 'Количество продуктов'," .
-                "PRIMARY KEY (`id`)" .
-                ") ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8 COMMENT='Справочник сайтов для парсинга';"
+            "`id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID'," .
+            "`name` varchar(30) NOT NULL COMMENT 'Наименование'," .
+            "`link` varchar(255) NOT NULL COMMENT 'Базовая ссылка'," .
+            "`modulname` varchar(255) NOT NULL COMMENT 'Имя модуля обработки'," .
+            "`minid` int unsigned NOT NULL COMMENT 'Стартовый id продукта'," .
+            "`maxid` int unsigned NOT NULL COMMENT 'Финишный id продукта'," .
+            "`mult` decimal(4,2) unsigned NOT NULL COMMENT 'Множитель'," .
+            "`status` enum('ok','new','del','price','get','parse') NOT NULL COMMENT 'ok,new,del,price,get,parse'," .
+            "`message` varchar(255) NOT NULL," .
+            "`productcount` decimal(10,0) NOT NULL DEFAULT '0' COMMENT 'Количество продуктов'," .
+            "PRIMARY KEY (`id`)" .
+            ") ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8 COMMENT='Справочник сайтов для парсинга';"
         );
 
 
         $this->db->query(
             "INSERT INTO `ar_site` (`id`, `name`, `link`, `modulname`, `minid`, `maxid`, `mult`, `status`, `message`, `productcount`) VALUES" .
-                "(1,'Карлсон','https://carlson24.ru','carlson',25000,29999,1.00,'new','',0)," .
-                "(7,'Мекко','https://mekkomeb.ru/','mekko',15000,19999,1.10,'ok','',0)," .
-                "(8,'AltayMebel','http://altaimebel22.ru','altaymebel',10000,14999,1.10,'ok','',0)," .
-                "(9,'Ваша мебель','https://nsk.vmebel24.ru/','vmebel',20000,24999,1.10,'ok','',0)," .
-                "(10,'Три кроватки (вручную)','http://3krovatki.ru/','noModule',30000,34999,1.10,'','',0)," .
-                "(11,'Деникс ','https://denx.su/','denx',35000,39999,1.10,'ok','',0)," .
-                "(12,'Е1 шкафы (вручную) ','https://www.e-1.ru/','noModule',40000,44999,1.10,'','',0)," .
-                "(13,'барнаул мебельный (вручную) ','noLink','noModule',45000,49999,1.10,'','',0)," .
-                "(14,'Пазитивчик пуфики','https://pazitif.com/','pazitif',55000,59999,1.10,'','',0)," .
-                "(15,'Есэндвич','https://esandwich.ru','esandwich',60000,89999,1.30,'ok','',0)," .
-                "(16,'Есэндвич ричи','https://esandwich.ru','esandwich1',60000,89999,1.10,'ok','',0)," .
-                "(17,'Есэндвич ИЦ','https://esandwich.ru','esandwich2',60000,89999,1.10,'ok','',0)," .
-                "(18,'Есэндвич DSV','https://esandwich.ru','esandwich3',60000,89999,1.10,'ok','',0)," .
-                "(19,'Есэндвич  -Ол','https://esandwich.ru','esandwich4',60000,89999,1.10,'ok','',0)," .
-                "(20,'Есэндвич  г.Волгодонск','https://esandwich.ru','esandwich5',60000,89999,1.10,'ok','',0)," .
-                "(21,'Есэндвич  Gnt','https://esandwich.ru','esandwich6',60000,89999,1.10,'ok','',0)," .
-                "(22,'Есэндвич  г.Глазов','https://esandwich.ru','esandwich7',60000,89999,1.10,'ok','',0)," .
-                "(23,'ОЛ-мекко','https://olmeko.ru','Olmeko',90000,95000,1.10,'ok','',0)," .
-                "(24,'sitparad','http://sitparad.com','siteparad',50000,54999,1.10,'ok','',0)," .
-                "(25,'Granfest ','https://granfest.ru','granfest',51000,51999,1.00,'ok','',0)," .
-                "(26,'Mobi','https://mobi-mebel.ru','mobi',55000,55999,1.00,'ok','',0)," .
-                "(27,'Gorizont','http://pnz.gorizontmebel.ru','gorizont',57000,57999,1.00,'ok',' ',0)," .
-                "(28,'Карлсон новый','https://adelco24.ru/','adelco24',25000,29999,1.00,'ok','',155);"
+            "(1,'Карлсон','https://carlson24.ru','carlson',25000,29999,1.00,'new','',0)," .
+            "(7,'Мекко','https://mekkomeb.ru/','mekko',15000,19999,1.10,'ok','',0)," .
+            "(8,'AltayMebel','http://altaimebel22.ru','altaymebel',10000,14999,1.10,'ok','',0)," .
+            "(9,'Ваша мебель','https://nsk.vmebel24.ru/','vmebel',20000,24999,1.10,'ok','',0)," .
+            "(10,'Три кроватки (вручную)','http://3krovatki.ru/','noModule',30000,34999,1.10,'','',0)," .
+            "(11,'Деникс ','https://denx.su/','denx',35000,39999,1.10,'ok','',0)," .
+            "(12,'Е1 шкафы (вручную) ','https://www.e-1.ru/','noModule',40000,44999,1.10,'','',0)," .
+            "(13,'барнаул мебельный (вручную) ','noLink','noModule',45000,49999,1.10,'','',0)," .
+            "(14,'Пазитивчик пуфики','https://pazitif.com/','pazitif',55000,59999,1.10,'','',0)," .
+            "(15,'Есэндвич','https://esandwich.ru','esandwich',60000,89999,1.30,'ok','',0)," .
+            "(16,'Есэндвич ричи','https://esandwich.ru','esandwich1',60000,89999,1.10,'ok','',0)," .
+            "(17,'Есэндвич ИЦ','https://esandwich.ru','esandwich2',60000,89999,1.10,'ok','',0)," .
+            "(18,'Есэндвич DSV','https://esandwich.ru','esandwich3',60000,89999,1.10,'ok','',0)," .
+            "(19,'Есэндвич  -Ол','https://esandwich.ru','esandwich4',60000,89999,1.10,'ok','',0)," .
+            "(20,'Есэндвич  г.Волгодонск','https://esandwich.ru','esandwich5',60000,89999,1.10,'ok','',0)," .
+            "(21,'Есэндвич  Gnt','https://esandwich.ru','esandwich6',60000,89999,1.10,'ok','',0)," .
+            "(22,'Есэндвич  г.Глазов','https://esandwich.ru','esandwich7',60000,89999,1.10,'ok','',0)," .
+            "(23,'ОЛ-мекко','https://olmeko.ru','Olmeko',90000,95000,1.10,'ok','',0)," .
+            "(24,'sitparad','http://sitparad.com','siteparad',50000,54999,1.10,'ok','',0)," .
+            "(25,'Granfest ','https://granfest.ru','granfest',51000,51999,1.00,'ok','',0)," .
+            "(26,'Mobi','https://mobi-mebel.ru','mobi',55000,55999,1.00,'ok','',0)," .
+            "(27,'Gorizont','http://pnz.gorizontmebel.ru','gorizont',57000,57999,1.00,'ok',' ',0)," .
+            "(28,'Карлсон новый','https://adelco24.ru/','adelco24',25000,29999,1.00,'ok','',155);"
         );
 
         $this->db->query(
             "CREATE TABLE IF NOT EXISTS `ar_product` (" .
-                "`id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'id'," .
-                "`site_id` int unsigned NOT NULL COMMENT 'id сайта'," .
-                "`name` varchar(255) NOT NULL COMMENT 'Наименование продукта'," .
-                "`price` int NOT NULL COMMENT 'Цена'," .
-                "`product_info` text NOT NULL COMMENT 'Информация о продукте'," .
-                "`images_link` text NOT NULL COMMENT 'Ссылки на картинки - список с разделителем \n'," .
-                "`status` enum('ok','new','del','price') NOT NULL COMMENT 'Статус: ok|new|del|price'," .
-                "PRIMARY KEY (`id`)" .
-                ") ENGINE=InnoDB AUTO_INCREMENT=90444 DEFAULT CHARSET=utf8;"
+            "`id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'id'," .
+            "`site_id` int unsigned NOT NULL COMMENT 'id сайта'," .
+            "`name` varchar(255) NOT NULL COMMENT 'Наименование продукта'," .
+            "`price` int NOT NULL COMMENT 'Цена'," .
+            "`product_info` text NOT NULL COMMENT 'Информация о продукте'," .
+            "`images_link` text NOT NULL COMMENT 'Ссылки на картинки - список с разделителем \n'," .
+            "`status` enum('ok','new','del','price') NOT NULL COMMENT 'Статус: ok|new|del|price'," .
+            "PRIMARY KEY (`id`)" .
+            ") ENGINE=InnoDB AUTO_INCREMENT=90444 DEFAULT CHARSET=utf8;"
         );
     }
 
@@ -327,12 +327,12 @@ class ControllerExtensionModuleArserSite extends Controller
             $this->language->get('text_pagination'),
             ($site_total) ? (($page - 1) * $this->config->get('config_limit_admin')) + 1 : 0,
             ((($page - 1) * $this->config->get(
-                'config_limit_admin'
-            )) > ($site_total - $this->config->get(
-                'config_limit_admin'
-            ))) ? $site_total : ((($page - 1) * $this->config->get(
-                'config_limit_admin'
-            )) + $this->config->get('config_limit_admin')),
+                        'config_limit_admin'
+                    )) > ($site_total - $this->config->get(
+                        'config_limit_admin'
+                    ))) ? $site_total : ((($page - 1) * $this->config->get(
+                        'config_limit_admin'
+                    )) + $this->config->get('config_limit_admin')),
             $site_total,
             ceil($site_total / $this->config->get('config_limit_admin'))
         );
@@ -1027,11 +1027,15 @@ class ControllerExtensionModuleArserSite extends Controller
             $pInfo = unserialize($row['product_info']);
             $imgs = unserialize($row['images_link']);
 
-            $img = $imgs[0];
-
-            if (($imgname = array_search($img, $aImg)) === false) { // не нашел, добавим ссылку на картинку
-                $imgname = $this->genImgName($img, $row['id'], 0);
-                $aImg[$imgname] = $img;
+            if (isset($imgs[0])) {
+                $img = $imgs[0];
+                if (($imgname = array_search($img, $aImg)) === false) { // не нашел, добавим ссылку на картинку
+                    $imgname = $this->genImgName($img, $row['id'], 0);
+                    $aImg[$imgname] = $img;
+                }
+            } else {
+                $img = '';
+                $imgname = '';
             }
 
             //Указывая номера ячеек, заполняем страницу данными
@@ -1208,7 +1212,7 @@ class ControllerExtensionModuleArserSite extends Controller
         foreach ($rows as $row) {
             //            $pInfo = unserialize($row['product_info']);
             $imgs = unserialize($row['images_link']);
-            $log->write($row['id'] . ' ' . print_r($imgs,true));
+            $log->write($row['id'] . ' ' . print_r($imgs, true));
             foreach ($imgs as $key => $img) {
                 if (($imgname = array_search($img, $aImg)) === false) { // не нашел, добавим ссылку на картинку
                     $imgname = $this->genImgName($img, $row['id'], $key);
@@ -1249,7 +1253,6 @@ class ControllerExtensionModuleArserSite extends Controller
                 $site_id,
                 $site_info['name'] . " Загрузка картинок ($i/$all)"
             );
-
         }
         $this->model_extension_module_arser_site->setMessageSite($site_id, '');
     }
