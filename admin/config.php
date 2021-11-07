@@ -1,4 +1,13 @@
 <?php
+
+
+ini_set('display_errors', 1);
+
+ini_set('display_startup_errors', 1);
+
+error_reporting(E_ALL);
+
+
 // HTTP
 define('HTTP_SERVER', 'http://kolibri.loc/admin/');
 define('HTTP_CATALOG', 'http://kolibri.loc/');

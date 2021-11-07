@@ -30,8 +30,10 @@ class ControllerExtensionExportImport extends Controller {
 					$this->response->redirect($this->url->link('extension/export_import', 'user_token=' . $this->session->data['user_token'], $this->ssl));
 				}
 				else {
-					$this->error['warning'] = $this->language->get('error_upload');
-					$this->error['warning'] .= "<br />\n".$this->language->get( 'text_log_details_2_1_x' );
+					$this->session->data['warning'] = $this->language->get('error_upload');
+					$href = $this->url->link( 'tool/log', 'user_token='.$this->session->data['user_token'], $this->ssl );
+					$this->session->data['warning'] .= "<br />\n".str_replace('%1',$href,$this->language->get( 'text_log_details_3_x' ));
+					$this->response->redirect($this->url->link('extension/export_import', 'user_token=' . $this->session->data['user_token'], $this->ssl));
 				}
 			}
 		}
@@ -148,11 +150,15 @@ class ControllerExtensionExportImport extends Controller {
 		$data['text_no'] = $this->language->get('text_no');
 		$data['text_loading_notifications'] = $this->language->get( 'text_loading_notifications' );
 		$data['text_retry'] = $this->language->get('text_retry');
+		$data['text_used_category_ids'] = $this->language->get('text_used_category_ids');
+		$data['text_used_product_ids'] = $this->language->get('text_used_product_ids');
 
 		$data['entry_export'] = $this->language->get( 'entry_export' );
 		$data['entry_import'] = $this->language->get( 'entry_import' );
 		$data['entry_export_type'] = $this->language->get( 'entry_export_type' );
 		$data['entry_range_type'] = $this->language->get( 'entry_range_type' );
+		$data['entry_category_filter'] = $this->language->get( 'entry_category_filter' );
+		$data['entry_category'] = $this->language->get( 'entry_category' );
 		$data['entry_start_id'] = $this->language->get( 'entry_start_id' );
 		$data['entry_start_index'] = $this->language->get( 'entry_start_index' );
 		$data['entry_end_id'] = $this->language->get( 'entry_end_id' );
@@ -179,6 +185,7 @@ class ControllerExtensionExportImport extends Controller {
 		$data['button_export_page'] = $this->language->get( 'button_export_page' );
 
 		$data['help_range_type'] = $this->language->get( 'help_range_type' );
+		$data['help_category_filter'] = $this->language->get( 'help_category_filter' );
 		$data['help_incremental_yes'] = $this->language->get( 'help_incremental_yes' );
 		$data['help_incremental_no'] = $this->language->get( 'help_incremental_no' );
 		$data['help_import'] = ($data['exist_filter']) ? $this->language->get( 'help_import' ) : $this->language->get( 'help_import_old' );
@@ -197,6 +204,8 @@ class ControllerExtensionExportImport extends Controller {
 
 		if (!empty($this->session->data['export_import_error']['errstr'])) {
 			$this->error['warning'] = $this->session->data['export_import_error']['errstr'];
+		} else if (isset($this->session->data['warning'])) {
+			$this->error['warning'] = $this->session->data['warning'];
 		}
 
  		if (isset($this->error['warning'])) {
@@ -208,6 +217,7 @@ class ControllerExtensionExportImport extends Controller {
 			$data['error_warning'] = '';
 		}
 
+		unset($this->session->data['warning']);
 		unset($this->session->data['export_import_error']);
 		unset($this->session->data['export_import_nochange']);
 
@@ -331,6 +341,8 @@ class ControllerExtensionExportImport extends Controller {
 			$data['settings_use_import_cache'] = '0';
 		}
 
+		$data['categories'] = array();
+
 		$min_product_id = $this->model_extension_export_import->getMinProductId();
 		$max_product_id = $this->model_extension_export_import->getMaxProductId();
 		$count_product = $this->model_extension_export_import->getCountProduct();
@@ -341,6 +353,11 @@ class ControllerExtensionExportImport extends Controller {
 		$max_customer_id = $this->model_extension_export_import->getMaxCustomerId();
 		$count_customer = $this->model_extension_export_import->getCountCustomer();
 		
+		$data['text_used_category_ids'] = str_replace('%1',$min_category_id,$data['text_used_category_ids']);
+		$data['text_used_category_ids'] = str_replace('%2',$max_category_id,$data['text_used_category_ids']);
+		$data['text_used_product_ids'] = str_replace('%1',$min_product_id,$data['text_used_product_ids']);
+		$data['text_used_product_ids'] = str_replace('%2',$max_product_id,$data['text_used_product_ids']);
+
 		$data['min_product_id'] = $min_product_id;
 		$data['max_product_id'] = $max_product_id;
 		$data['count_product'] = $count_product;
@@ -552,6 +569,15 @@ class ControllerExtensionExportImport extends Controller {
 			$json['message'] = $response;
 			$json['error'] = '';
 		}
+		$this->response->setOutput(json_encode($json));
+	}
+
+
+	public function getCountProduct() {
+		$this->load->model('extension/export_import');
+		$count = $this->model_extension_export_import->getCountProduct();
+		$json = array( 'count'=>$count );
+		$this->response->addHeader('Content-Type: application/json');
 		$this->response->setOutput(json_encode($json));
 	}
 }

@@ -44,8 +44,8 @@
                         <table class="table table-bordered table-hover">
                             <thead>
                             <tr>
-                                <td style="width: 1px;" class="text-center"><input type="checkbox"
-                                                                                   onclick="$('input[name*=\'selected\']').prop('checked', this.checked);"/>
+                                <td style="width: 1px;" class="text-center">
+                                    <input type="checkbox" onclick="$('input[name*=\'selected\']').prop('checked', this.checked);"/>
                                 </td>
                                 <td class="text-left">{% if sort %}
                                         <a href="{{ sort_name }}" class="{{ order|lower }}">name {{ column_name }}</a>
@@ -128,10 +128,10 @@
                                                 {# выводим кнопки по экспорту#}
                                                 {% if site.productcount > 0 %}
                                                     <a href="{{ site.export }}" data-toggle="tooltip"
-                                                       title="{{ button_export }}" class="{{ btnStyle }} btn"><i
+                                                       title="{{ button_export }}" class="btn {{ btnStyle }}"><i
                                                                 class="fa fa-file-excel-o"></i> Экспорт</a>
                                                     <a href="{{ site.getimage }}" data-toggle="tooltip"
-                                                       title="{{ button_getimage }}" class="{{ btnStyle }} btn clickmodalimg"><i
+                                                       title="{{ button_getimage }}" class="btn {{ btnStyle }} clickmodalimg"><i
                                                                 class="fa fa-file-image-o"></i></a>
                                                 {% endif %}
 

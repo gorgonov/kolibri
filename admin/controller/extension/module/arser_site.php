@@ -2,7 +2,7 @@
 
 class ControllerExtensionModuleArserSite extends Controller
 {
-    private $error = array();
+    private $error = [];
 
     public function install()
     {
@@ -65,7 +65,7 @@ class ControllerExtensionModuleArserSite extends Controller
     }
 
     /**
-     * Check if the table 'customer_online' exists
+     * Check if the table 'ar_site' exists
      * @return boolean TRUE if table exists, FALSE otherwise.
      */
     public function CheckCustomer()
@@ -136,7 +136,7 @@ class ControllerExtensionModuleArserSite extends Controller
             $url .= '&page=' . $this->request->get['page'];
         }
 
-        $data['breadcrumbs'] = array();
+        $data['breadcrumbs'] = [];
 
         $data['breadcrumbs'][] = array(
             'text' => $this->language->get('text_home'),
@@ -192,7 +192,7 @@ class ControllerExtensionModuleArserSite extends Controller
 
         $results = $this->model_extension_module_arser_site->getSites($filter_data);
 
-        $data['sites'] = array();
+        $data['sites'] = [];
         foreach ($results as $result) {
             $data['sites'][] = array(
                 'id' => $result['id'],
@@ -250,7 +250,7 @@ class ControllerExtensionModuleArserSite extends Controller
         if (isset($this->request->post['selected'])) {
             $data['selected'] = (array)$this->request->post['selected'];
         } else {
-            $data['selected'] = array();
+            $data['selected'] = [];
         }
 
         $url = '';
@@ -377,14 +377,14 @@ class ControllerExtensionModuleArserSite extends Controller
         // Загружаем настройки через метод "модели"
         $setting = $this->model_extension_module_arser_site->LoadSettings();
 
-        $data = array();
+        $data = [];
         $data['text_form'] = $this->language->get('heading_setting');
         $data['arser_status'] = $setting['arser_status'] ?? 1;
         $data['arser_import_path'] = $setting['arser_import_path'] ?? '';
 
         // Загружаем "хлебные крошки"
         $url = '';
-        $data['breadcrumbs'] = array();
+        $data['breadcrumbs'] = [];
         $data['breadcrumbs'][] = array(
             'text' => $this->language->get('text_home'),
             'href' => $this->url->link('common/dashboard', 'user_token=' . $this->session->data['user_token'], true)
@@ -434,12 +434,11 @@ class ControllerExtensionModuleArserSite extends Controller
     public function add()
     {
         $this->load->language('extension/module/arser_site');
-
         $this->document->setTitle($this->language->get('heading_title'));
-
         $this->load->model('extension/module/arser_site');
 
         if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm()) {
+            /** ModelExtensionModuleArserSite $this->model_extension_module_arser_site */
             $this->model_extension_module_arser_site->addSite($this->request->post);
 
             $this->session->data['success'] = $this->language->get('text_success');
@@ -520,53 +519,16 @@ class ControllerExtensionModuleArserSite extends Controller
             ? $this->language->get('text_add')
             : $this->language->get('text_edit');
 
-        if (isset($this->error['warning'])) {
-            $data['error_warning'] = $this->error['warning'];
-        } else {
-            $data['error_warning'] = '';
-        }
 
-        if (isset($this->error['name'])) {
-            $data['error_name'] = $this->error['name'];
-        } else {
-            $data['error_name'] = array();
-        }
+        $data['error_warning'] = isset($this->error['warning']) ? $this->error['warning'] : '';
 
-        if (isset($this->error['link'])) {
-            $data['error_link'] = $this->error['link'];
-        } else {
-            $data['error_link'] = array();
-        }
-
-        if (isset($this->error['modulname'])) {
-            $data['error_modulname'] = $this->error['modulname'];
-        } else {
-            $data['error_modulname'] = array();
-        }
-
-        if (isset($this->error['minid'])) {
-            $data['error_minid'] = $this->error['minid'];
-        } else {
-            $data['error_minid'] = array();
-        }
-
-        if (isset($this->error['maxid'])) {
-            $data['error_maxid'] = $this->error['maxid'];
-        } else {
-            $data['error_maxid'] = array();
-        }
-
-        if (isset($this->error['mult'])) {
-            $data['error_mult'] = $this->error['mult'];
-        } else {
-            $data['error_mult'] = array();
-        }
-
-        if (isset($this->error['status'])) {
-            $data['error_status'] = $this->error['status'];
-        } else {
-            $data['error_status'] = '';
-        }
+        $data['error_name'] = isset($this->error['name']) ? $this->error['name'] : [];
+        $data['error_link'] = isset($this->error['link']) ? $this->error['link'] : [];
+        $data['error_modulname'] = isset($this->error['modulname']) ? $this->error['modulname'] : [];
+        $data['error_minid'] = isset($this->error['minid']) ? $this->error['minid'] : [];
+        $data['error_maxid'] = isset($this->error['maxid']) ? $this->error['maxid'] : [];
+        $data['error_mult'] = isset($this->error['mult']) ? $this->error['mult'] : [];
+        $data['error_status'] = isset($this->error['status']) ? $this->error['status'] : '';
 
         $url = '';
 
@@ -582,21 +544,21 @@ class ControllerExtensionModuleArserSite extends Controller
             $url .= ' & page = ' . $this->request->get['page'];
         }
 
-        $data['breadcrumbs'] = array();
+        $data['breadcrumbs'] = [];
 
-        $data['breadcrumbs'][] = array(
+        $data['breadcrumbs'][] = [
             'text' => $this->language->get('text_home'),
             'href' => $this->url->link('common/dashboard', 'user_token=' . $this->session->data['user_token'], true)
-        );
+        ];
 
-        $data['breadcrumbs'][] = array(
+        $data['breadcrumbs'][] = [
             'text' => $this->language->get('heading_title'),
             'href' => $this->url->link(
                 'extension/module/arser_site',
                 'user_token=' . $this->session->data['user_token'] . $url,
                 true
             )
-        );
+        ];
 
         if (!isset($this->request->get['id'])) {
             $data['action'] = $this->url->link(
@@ -684,6 +646,8 @@ class ControllerExtensionModuleArserSite extends Controller
             $data['status'] = '';
         }
 
+        $data['pages'] = $this->getPages(0);
+
         $data['header'] = $this->load->controller('common / header');
         $data['column_left'] = $this->load->controller('common / column_left');
         $data['footer'] = $this->load->controller('common / footer');
@@ -733,6 +697,339 @@ class ControllerExtensionModuleArserSite extends Controller
         $this->getForm();
     }
 
+
+    protected function getFormGrab()
+    {
+        $siteId = $this->request->get['id'];
+        $linkFilter = $this->request->post['status'] ?? 'all';
+        $data['error_warning'] = isset($this->error['warning']) ? $this->error['warning'] : '';
+
+        // получить модель продуктов
+        $this->load->model('extension/module/arser_product');
+
+        $productCount = $this->model_extension_module_arser_product->getProductCount($siteId, $linkFilter);
+
+        $data['linkFilters'] = [
+            'all' => [
+                'name' => 'Все',
+                'count' => $productCount['all'] ?? 0,
+                'checked' => $linkFilter == 'all' ? 'checked' : ''
+            ],
+            'ok' => [
+                'name' => 'Обработанные',
+                'count' => $productCount['ok'] ?? 0,
+                'checked' => $linkFilter == 'ok' ? 'checked' : ''
+            ],
+            'new' => [
+                'name' => 'НЕ обработанные',
+                'count' => $productCount['new'] ?? 0,
+                'checked' => $linkFilter == 'new' ? 'checked' : ''
+            ],
+            'bad' => [
+                'name' => 'С ошибками',
+                'count' => $productCount['bad'] ?? 0,
+                'checked' => $linkFilter == 'bad' ? 'checked' : ''
+            ],
+            'del' => [
+                'name' => 'Удаленные',
+                'count' => $productCount['del'] ?? 0,
+                'checked' => $linkFilter == 'del' ? 'checked' : ''
+            ],
+        ];
+
+        $products = $this->model_extension_module_arser_product->getProducts($siteId, $linkFilter);
+        $classStatus = [
+            'new' => 'alert-secondary',
+            'ok' => 'alert-success',
+            'del' => 'alert-warning',
+            'bad' => 'alert-danger',
+            'price' => 'alert-info',
+        ];
+        $data['hrefs'] = [];
+        foreach ($products as $product) {
+            $phpInfo = unserialize($product['product_info']);
+            $data['hrefs'][] = [
+                'id' => $product['id'],
+                'status' => $product['status'],
+                'class' => $classStatus[$product['status']] ?? '',
+                'message' => $product['message'],
+                'link' => $phpInfo['link'],
+            ];
+        }
+
+        $url = '';
+
+        $data['breadcrumbs'] = [];
+
+        $data['breadcrumbs'][] = [
+            'text' => $this->language->get('text_home'),
+            'href' => $this->url->link('common/dashboard', 'user_token=' . $this->session->data['user_token'], true)
+        ];
+
+        $data['breadcrumbs'][] = [
+            'text' => $this->language->get('heading_title'),
+            'href' => $this->url->link(
+                'extension/module/arser_site',
+                'user_token=' . $this->session->data['user_token'] . $url,
+                true
+            )
+        ];
+
+        $data['cancel'] = $this->url->link(
+            'extension/module/arser_site',
+            'user_token=' . $this->session->data['user_token'] . $url,
+            true
+        );
+
+        if (isset($this->request->get['id'])) {
+            $site_info = $this->model_extension_module_arser_site->getSite($this->request->get['id']);
+        }
+
+        $data['user_token'] = $this->session->data['user_token'];
+
+        $this->load->model('localisation / language');
+
+        $data['languages'] = $this->model_localisation_language->getLanguages();
+
+        if (isset($this->request->post['name'])) {
+            $data['name'] = $this->request->post['name'];
+        } elseif (!empty($site_info)) {
+            $data['name'] = $site_info['name'];
+        } else {
+            $data['name'] = '';
+        }
+
+//        $data['pages'] = $this->getPages(1);
+
+        $data['header'] = $this->load->controller('common / header');
+        $data['column_left'] = $this->load->controller('common / column_left');
+        $data['footer'] = $this->load->controller('common / footer');
+
+//        $this->getListForGrab($this->request->get['id']);
+        $this->response->setOutput($this->load->view('extension / module / arser_grab', $data));
+    }
+
+    /**
+     * вывод подготовки списка страниц для парсинга
+     */
+    protected function getListForGrab($siteId)
+    {
+        if (isset($this->request->get['sort'])) {
+            $sort = $this->request->get['sort'];
+        } else {
+            $sort = 'id';
+        }
+
+        if (isset($this->request->get['order'])) {
+            $order = $this->request->get['order'];
+        } else {
+            $order = 'ASC';
+        }
+
+        if (isset($this->request->get['page'])) {
+            $page = $this->request->get['page'];
+        } else {
+            $page = 1;
+        }
+
+        $url = '';
+
+        if (isset($this->request->get['sort'])) {
+            $url .= '&sort=' . $this->request->get['sort'];
+        }
+
+        if (isset($this->request->get['order'])) {
+            $url .= '&order=' . $this->request->get['order'];
+        }
+
+        if (isset($this->request->get['page'])) {
+            $url .= '&page=' . $this->request->get['page'];
+        }
+//
+//        $data['breadcrumbs'] = [];
+//
+//        $data['breadcrumbs'][] = array(
+//            'text' => $this->language->get('text_home'),
+//            'href' => $this->url->link('common/dashboard', 'user_token=' . $this->session->data['user_token'], true)
+//        );
+//
+//        $data['breadcrumbs'][] = array(
+//            'text' => $this->language->get('heading_title'),
+//            'href' => $this->url->link(
+//                'extension/module/arser_site',
+//                'user_token=' . $this->session->data['user_token'] . $url,
+//                true
+//            )
+//        );
+//
+//        $data['add'] = $this->url->link(
+//            'extension/module/arser_site/add',
+//            'user_token=' . $this->session->data['user_token'] . $url,
+//            true
+//        );
+//        $data['repair'] = $this->url->link(
+//            'extension/module/arser_site/repair',
+//            'user_token=' . $this->session->data['user_token'] . $url,
+//            true
+//        );
+//        $data['delete'] = $this->url->link(
+//            'extension/module/arser_site/delete',
+//            'user_token=' . $this->session->data['user_token'] . $url,
+//            true
+//        );
+//        $data['setting'] = $this->url->link(
+//            'extension/module/arser_site/setting',
+//            'user_token=' . $this->session->data['user_token'] . $url,
+//            true
+//        );
+//
+//        $data['modal'] = $this->url->link(
+//            'extension/module/arser_site/modal',
+//            'user_token=' . $this->session->data['user_token'] . $url,
+//            true
+//        );
+
+        $filter_data = array(
+            'sort' => $sort,
+            'order' => $order,
+            'start' => ($page - 1) * $this->config->get('config_limit_admin'),
+            'limit' => $this->config->get('config_limit_admin')
+        );
+
+        $products = $this->model_extension_module_arser_product->getProducts($siteId);
+
+        $site_total = $this->model_extension_module_arser_product->getProductCount($siteId);
+
+        $data['sites'] = [];
+        foreach ($products as $result) {
+            $data['products'][] = array(
+                'id' => $result['id'],
+                'name' => $result['name'],
+                'sku' => $result['sku'],
+            );
+        }
+
+        if (isset($this->error['warning'])) {
+            $data['error_warning'] = $this->error['warning'];
+        } else {
+            $data['error_warning'] = '';
+        }
+
+        if (isset($this->session->data['success'])) {
+            $data['success'] = $this->session->data['success'];
+
+            unset($this->session->data['success']);
+        } else {
+            $data['success'] = '';
+        }
+
+        if (isset($this->request->post['selected'])) {
+            $data['selected'] = (array)$this->request->post['selected'];
+        } else {
+            $data['selected'] = [];
+        }
+
+        $url = '';
+
+        if ($order == 'ASC') {
+            $url .= '&order=DESC';
+        } else {
+            $url .= '&order=ASC';
+        }
+
+        if (isset($this->request->get['page'])) {
+            $url .= '&page=' . $this->request->get['page'];
+        }
+
+        $data['sort_name'] = $this->url->link(
+            'extension/module/arser_site',
+            'user_token=' . $this->session->data['user_token'] . '&sort=name' . $url,
+            true
+        );
+        $data['sort_link'] = $this->url->link(
+            'extension/module/arser_site',
+            'user_token=' . $this->session->data['user_token'] . '&sort=link' . $url,
+            true
+        );
+        $data['sort_modulname'] = $this->url->link(
+            'extension/module/arser_site',
+            'user_token=' . $this->session->data['user_token'] . '&sort=modulname' . $url,
+            true
+        );
+        $data['sort_minid'] = $this->url->link(
+            'extension/module/arser_site',
+            'user_token=' . $this->session->data['user_token'] . '&sort=minid' . $url,
+            true
+        );
+        $data['sort_maxid'] = $this->url->link(
+            'extension/module/arser_site',
+            'user_token=' . $this->session->data['user_token'] . '&sort=maxid' . $url,
+            true
+        );
+        $data['sort_mult'] = $this->url->link(
+            'extension/module/arser_site',
+            'user_token=' . $this->session->data['user_token'] . '&sort=mult' . $url,
+            true
+        );
+        $data['sort_status'] = $this->url->link(
+            'extension/module/arser_site',
+            'user_token=' . $this->session->data['user_token'] . '&sort=status' . $url,
+            true
+        );
+
+        $url = '';
+
+        if (isset($this->request->get['sort'])) {
+            $url .= '&sort=' . $this->request->get['sort'];
+        }
+
+        if (isset($this->request->get['order'])) {
+            $url .= '&order=' . $this->request->get['order'];
+        }
+
+        $pagination = new Pagination();
+        $pagination->total = $site_total;
+        $pagination->page = $page;
+        $pagination->limit = $this->config->get('config_limit_admin');
+        $pagination->url = $this->url->link(
+            'extension/module/arser_site',
+            'user_token=' . $this->session->data['user_token'] . $url . '&page={page}',
+            true
+        );
+
+        $data['pagination'] = $pagination->render();
+
+        $data['results'] = sprintf(
+            $this->language->get('text_pagination'),
+            ($site_total) ? (($page - 1) * $this->config->get('config_limit_admin')) + 1 : 0,
+            ((($page - 1) * $this->config->get(
+                        'config_limit_admin'
+                    )) > ($site_total - $this->config->get(
+                        'config_limit_admin'
+                    ))) ? $site_total : ((($page - 1) * $this->config->get(
+                        'config_limit_admin'
+                    )) + $this->config->get('config_limit_admin')),
+            $site_total,
+            ceil($site_total / $this->config->get('config_limit_admin'))
+        );
+
+        $data['sort'] = $sort;
+        $data['order'] = $order;
+
+        $data['header'] = $this->load->controller('common/header');
+        $data['column_left'] = $this->load->controller('common/column_left');
+        $data['footer'] = $this->load->controller('common/footer');
+
+        $this->response->setOutput($this->load->view('extension/module/arser_site', $data));
+    }
+
+    public function grab()
+    {
+        $this->load->language('extension/module/arser_site');
+        $this->document->setTitle($this->language->get('heading_title'));
+        $this->load->model('extension/module/arser_site');
+        $this->getFormGrab();
+    }
 
     /**
      * загрузить файл
@@ -921,7 +1218,7 @@ class ControllerExtensionModuleArserSite extends Controller
 
     public function autocomplete()
     {
-        $json = array();
+        $json = [];
 
         if (isset($this->request->get['filter_name'])) {
             $this->load->model('catalog / category');
@@ -944,7 +1241,7 @@ class ControllerExtensionModuleArserSite extends Controller
             }
         }
 
-        $sort_order = array();
+        $sort_order = [];
 
         foreach ($json as $key => $value) {
             $sort_order[$key] = $value['name'];
@@ -1027,108 +1324,165 @@ class ControllerExtensionModuleArserSite extends Controller
             $pInfo = unserialize($row['product_info']);
             $imgs = unserialize($row['images_link']);
 
-            if (isset($imgs[0])) {
-                $img = $imgs[0];
-                if (($imgname = array_search($img, $aImg)) === false) { // не нашел, добавим ссылку на картинку
-                    $imgname = $this->genImgName($img, $row['id'], 0);
-                    $aImg[$imgname] = $img;
-                }
-            } else {
-                $img = '';
-                $imgname = '';
+            $img = $imgs[0];
+
+            if (($imgname = array_search($img, $aImg)) === false) { // не нашел, добавим ссылку на картинку
+                $imgname = $this->genImgName($img, $row['id'], 0);
+                $aImg[$imgname] = $img;
             }
 
-            //Указывая номера ячеек, заполняем страницу данными
-            $objPHPExcel->getSheetByName('Products')
-                ->setCellValue('A' . $i['Products'], $row['id'])
-                ->setCellValue('B' . $i['Products'], $row['name'])
-                ->setCellValue('C' . $i['Products'], $pInfo['category'])
-                ->setCellValue('E' . $i['Products'], 'БЕСПЛАТНО!')
-                ->setCellValue('K' . $i['Products'], 999)
-                ->setCellValue('L' . $i['Products'], $pInfo['model'])
-                ->setCellValue('M' . $i['Products'], $pInfo['manufacturer'])
-                ->setCellValue('N' . $i['Products'], $imgname)
-                ->setCellValue('O' . $i['Products'], 'yes')
-                ->setCellValue('P' . $i['Products'], round($row['price'] / 10 * $mult) * 10)
-                ->setCellValue('Q' . $i['Products'], 0)
-                ->setCellValue('AA' . $i['Products'], 'true')
-                ->setCellValue('AB' . $i['Products'], 9)
-                ->setCellValue('AC' . $i['Products'], $pInfo['product_teh'])
-                //                ->setCellValue('AD' . $i['Products'], $pInfo['title'] ?? $row['name'])
-                ->setCellValue('AG' . $i['Products'], 7)
-                ->setCellValue('AH' . $i['Products'], 0)
-                ->setCellValue('AI' . $i['Products'], 0)
-                ->setCellValue('AL' . $i['Products'], 0)
-                ->setCellValue('AM' . $i['Products'], 'true')
-                ->setCellValue('AN' . $i['Products'], 1)
-                ->setCellValue('AO' . $i['Products'], $row['price'])
-                ->setCellValue('AP' . $i['Products'], $pInfo['link'] ?? 'не установлено');
+            try {
+                //Указывая номера ячеек, заполняем страницу данными
+                $objPHPExcel->getSheetByName('Products')
+                    ->setCellValue('A' . $i['Products'], $row['id'])
+                    ->setCellValue('B' . $i['Products'], $row['name'])
+                    ->setCellValue('C' . $i['Products'], $pInfo['category'])
+                    ->setCellValue('E' . $i['Products'], 'БЕСПЛАТНО!')
+                    ->setCellValue('K' . $i['Products'], 999)
+                    ->setCellValue('L' . $i['Products'], $pInfo['model'])
+                    ->setCellValue('M' . $i['Products'], $pInfo['manufacturer'])
+                    ->setCellValue('N' . $i['Products'], $imgname)
+                    ->setCellValue('O' . $i['Products'], 'yes')
+                    ->setCellValue('P' . $i['Products'], round($row['price'] / 10 * $mult) * 10)
+                    ->setCellValue('Q' . $i['Products'], 0)
+                    ->setCellValue('AA' . $i['Products'], 'true')
+                    ->setCellValue('AB' . $i['Products'], 9)
+                    ->setCellValue('AC' . $i['Products'], $pInfo['product_teh'])
+                    //                ->setCellValue('AD' . $i['Products'], $pInfo['title'] ?? $row['name'])
+                    ->setCellValue('AG' . $i['Products'], 7)
+                    ->setCellValue('AH' . $i['Products'], 0)
+                    ->setCellValue('AI' . $i['Products'], 0)
+                    ->setCellValue('AL' . $i['Products'], 0)
+                    ->setCellValue('AM' . $i['Products'], 'true')
+                    ->setCellValue('AN' . $i['Products'], 1)
+                    ->setCellValue('AO' . $i['Products'], $row['price'])
+                    ->setCellValue('AP' . $i['Products'], $pInfo['link'] ?? 'не установлено');
+            } catch (Exception $e) {
+                echo 'Заполняем Products' . PHP_EOL;
+                $this->echoError($e);
+
+                echo '$i=';
+                var_dump($i);
+                echo PHP_EOL;
+                echo '$pInfo=';
+                var_dump($pInfo);
+                echo PHP_EOL;
+                die();
+            }
             $i['Products']++;
 
-            foreach ($imgs as $key => $img) {
-                if (($imgname = array_search($img, $aImg)) === false) { // не нашел, добавим ссылку на картинку
-                    $imgname = $this->genImgName($img, $row['id'], $key);
-                    $aImg[$imgname] = $img;
-                } else {
-                }
+            try {
+                foreach ($imgs as $key => $img) {
+                    if (($imgname = array_search($img, $aImg)) === false) { // не нашел, добавим ссылку на картинку
+                        $imgname = $this->genImgName($img, $row['id'], $key);
+                        $aImg[$imgname] = $img;
+                    } else {
+                    }
 
-                if ($key > 0) {
-                    $objPHPExcel->getSheetByName('AdditionalImages')
-                        ->setCellValue('A' . $i['AdditionalImages'], $row['id'])
-                        ->setCellValue(
-                            'B' . $i['AdditionalImages'],
-                            $imgname
-                        ) // $this->genImgName($img, $row['id'], $key))
-                        ->setCellValue('C' . $i['AdditionalImages'], 0);
-                    $i['AdditionalImages']++;
-                }
-            }
-
-            if (isset($pInfo['ProductOptions'])) {
-                if ($pInfo['ProductOptions'] == 'Цвет') {
-                    $objPHPExcel->getSheetByName('ProductOptions')
-                        ->setCellValue('A' . $i['ProductOptions'], $row['id'])
-                        ->setCellValue('B' . $i['ProductOptions'], 'Цвет')
-                        ->setCellValue('D' . $i['ProductOptions'], 'true');
-                    $i['ProductOptions']++;
-
-
-                    foreach ($pInfo['colors'] as $key => $color) {
-                        $objPHPExcel->getSheetByName('ProductOptionValues')
-                            ->setCellValue('A' . $i['ProductOptionValues'], $row['id'])
-                            ->setCellValue('B' . $i['ProductOptionValues'], 'Цвет')
-                            ->setCellValue('C' . $i['ProductOptionValues'], $color)
-                            ->setCellValue('D' . $i['ProductOptionValues'], 10000)
-                            ->setCellValue('E' . $i['ProductOptionValues'], 'false')
-                            ->setCellValue('F' . $i['ProductOptionValues'], 0)
-                            ->setCellValue('G' . $i['ProductOptionValues'], '+')
-                            ->setCellValue('H' . $i['ProductOptionValues'], 0)
-                            ->setCellValue('I' . $i['ProductOptionValues'], '+')
-                            ->setCellValue('J' . $i['ProductOptionValues'], 0)
-                            ->setCellValue('K' . $i['ProductOptionValues'], '+');
-                        $i['ProductOptionValues']++;
+                    if ($key > 0) {
+                        $objPHPExcel->getSheetByName('AdditionalImages')
+                            ->setCellValue('A' . $i['AdditionalImages'], $row['id'])
+                            ->setCellValue(
+                                'B' . $i['AdditionalImages'],
+                                $imgname
+                            ) // $this->genImgName($img, $row['id'], $key))
+                            ->setCellValue('C' . $i['AdditionalImages'], 0);
+                        $i['AdditionalImages']++;
                     }
                 }
+            } catch (Exception $e) {
+                echo 'AdditionalImages' . PHP_EOL;
+                $this->echoError($e);
+                echo '$i=';
+                var_dump($i);
+                echo PHP_EOL;
+                echo '$pInfo=';
+                var_dump($pInfo);
+                echo PHP_EOL;
+                die();
             }
 
-            if (isset($pInfo['special'])) {
-                $objPHPExcel->getSheetByName('Specials')
-                    ->setCellValue('A' . $i['Specials'], $row['id'])
-                    ->setCellValue('B' . $i['Specials'], 'Default')
-                    ->setCellValue('C' . $i['Specials'], 0)
-                    ->setCellValue('D' . $i['Specials'], $pInfo['special']);
-                $i['Specials']++;
-            }
+            try {
+                if (isset($pInfo['ProductOptions'])) {
+                    if ($pInfo['ProductOptions'] == 'Цвет') {
+                        $objPHPExcel->getSheetByName('ProductOptions')
+                            ->setCellValue('A' . $i['ProductOptions'], $row['id'])
+                            ->setCellValue('B' . $i['ProductOptions'], 'Цвет')
+                            ->setCellValue('D' . $i['ProductOptions'], 'true');
+                        $i['ProductOptions']++;
 
-            if (isset($pInfo['attr'])) {
-                foreach ($pInfo['attr'] as $key => $item) {
-                    $objPHPExcel->getSheetByName('ProductAttributes')
-                        ->setCellValue('A' . $i['ProductAttributes'], $row['id'])
-                        ->setCellValue('B' . $i['ProductAttributes'], 'Фильтры')
-                        ->setCellValue('C' . $i['ProductAttributes'], $key)
-                        ->setCellValue('D' . $i['ProductAttributes'], $item);
-                    $i['ProductAttributes']++;
+
+                        foreach ($pInfo['colors'] as $key => $color) {
+                            $objPHPExcel->getSheetByName('ProductOptionValues')
+                                ->setCellValue('A' . $i['ProductOptionValues'], $row['id'])
+                                ->setCellValue('B' . $i['ProductOptionValues'], 'Цвет')
+                                ->setCellValue('C' . $i['ProductOptionValues'], $color)
+                                ->setCellValue('D' . $i['ProductOptionValues'], 10000)
+                                ->setCellValue('E' . $i['ProductOptionValues'], 'false')
+                                ->setCellValue('F' . $i['ProductOptionValues'], 0)
+                                ->setCellValue('G' . $i['ProductOptionValues'], '+')
+                                ->setCellValue('H' . $i['ProductOptionValues'], 0)
+                                ->setCellValue('I' . $i['ProductOptionValues'], '+')
+                                ->setCellValue('J' . $i['ProductOptionValues'], 0)
+                                ->setCellValue('K' . $i['ProductOptionValues'], '+');
+                            $i['ProductOptionValues']++;
+                        }
+                    }
                 }
+            } catch (Exception $e) {
+                echo 'ProductOptions' . PHP_EOL;
+                $this->echoError($e);
+                echo '$i=';
+                var_dump($i);
+                echo PHP_EOL;
+                echo '$pInfo=';
+                var_dump($pInfo);
+                echo PHP_EOL;
+                die();
+            }
+
+            try {
+                if (isset($pInfo['special'])) {
+                    $objPHPExcel->getSheetByName('Specials')
+                        ->setCellValue('A' . $i['Specials'], $row['id'])
+                        ->setCellValue('B' . $i['Specials'], 'Default')
+                        ->setCellValue('C' . $i['Specials'], 0)
+                        ->setCellValue('D' . $i['Specials'], $pInfo['special']);
+                    $i['Specials']++;
+                }
+            } catch (Exception $e) {
+                echo 'Specials' . PHP_EOL;
+                $this->echoError($e);
+                echo '$i=';
+                var_dump($i);
+                echo PHP_EOL;
+                echo '$pInfo=';
+                var_dump($pInfo);
+                echo PHP_EOL;
+                die();
+            }
+
+            try {
+                if (isset($pInfo['attr'])) {
+                    foreach ($pInfo['attr'] as $key => $item) {
+                        $objPHPExcel->getSheetByName('ProductAttributes')
+                            ->setCellValue('A' . $i['ProductAttributes'], $row['id'])
+                            ->setCellValue('B' . $i['ProductAttributes'], 'Фильтры')
+                            ->setCellValue('C' . $i['ProductAttributes'], $key)
+                            ->setCellValue('D' . $i['ProductAttributes'], $item);
+                        $i['ProductAttributes']++;
+                    }
+                }
+            } catch (Exception $e) {
+                echo 'ProductAttributes' . PHP_EOL;
+                $this->echoError($e);
+                echo '$i=';
+                var_dump($i);
+                echo PHP_EOL;
+                echo '$pInfo=';
+                var_dump($pInfo);
+                echo PHP_EOL;
+                die();
             }
         }
 
@@ -1313,5 +1667,37 @@ class ControllerExtensionModuleArserSite extends Controller
         $url = rawurlencode($url);
         $url = str_replace(array('%3A', '%2F'), array(':', '/'), $url);
         return $url;
+    }
+
+    protected function echoError(Exception $e)
+    {
+        echo $e->getMessage() . PHP_EOL;
+        echo $e->getCode() . PHP_EOL;
+        echo $e->getLine() . PHP_EOL;
+    }
+
+    private function getPages(int $active_tab)
+    {
+        $menu = [
+            [
+                'href' => 'edit',
+                'title' => '<i class="fa fa-pencil"></i> Настройки сайта'
+            ],
+            [
+                'href' => 'grab',
+                'title' => '<i class="fa fa-eye" aria-hidden="true"></i> Сбор ссылок'
+            ]
+        ];
+
+        foreach ($menu as $key => $item) {
+            $menu[$key]['href'] = $this->url->link(
+                'extension/module/arser_site/' . $menu[$key]['href'],
+                'user_token=' . $this->session->data['user_token'] . '&id=' . $this->request->get['id'],
+                true
+            );
+            $menu[$key]['active'] = ($key == $active_tab) ? 'active' : '';
+        }
+
+        return $menu;
     }
 }

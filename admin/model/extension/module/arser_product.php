@@ -331,16 +331,70 @@ class ModelExtensionModuleArserProduct extends Model
         }
     }
 
+    /**
+     * @param $site_id
+     */
     public function deleteProduct($site_id)
     {
         $this->db->query("DELETE FROM ar_product WHERE site_id = '" . (int)$site_id . "'");
     }
 
-    public function getProducts($site_id)
+    /**
+     * Количество продуктов сайта
+     * @param int $site_id
+     * @return array
+     */
+    public function getProductCount(int $site_id)
     {
-        $query = $this->db->query("SELECT DISTINCT * FROM ar_product s WHERE s.site_id = '" . (int)$site_id . "'");
+        $sql="
+SELECT status, count(*) count_product
+FROM ar_product
+WHERE site_id={$site_id}
+group by status
+UNION SELECT 'all', count(*) count_product
+FROM ar_product
+WHERE site_id={$site_id}
+        ";
+
+        $query = $this->db->query($sql);
+        $result = [];
+        foreach ($query->rows as $row) {
+            $result[$row['status']] = $row['count_product'];
+        }
+
+        return $result;
+    }
+
+    /**
+     * возвращает продукты сайта с учетом фильтра (статуса)
+     *
+     * @param int $site_id
+     * @param string $filter
+     * @return mixed
+     */
+    public function getProducts(int $site_id, string $filter='all')
+    {
+        $sql = "SELECT DISTINCT * FROM ar_product s WHERE s.site_id = '" . (int)$site_id . "'";
+        if ($filter == 'all') {
+        } elseif ($filter == 'ok') {
+            $sql .= "AND status='ok'";
+        } elseif ($filter == 'new') {
+            $sql .= "AND status='new'";
+        } elseif ($filter == 'bad') {
+            $sql .= "AND status='bad'";
+        } elseif ($filter == 'del') {
+            $sql .= "AND status='del'";
+        }
+
+        $query = $this->db->query($sql);
 
         return $query->rows;
     }
 
+    public function getTotalProducts()
+    {
+        $query = $this->db->query("SELECT COUNT(*) AS total FROM ar_product");
+
+        return $query->row['total'];
+    }
 }

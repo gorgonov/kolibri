@@ -5,8 +5,17 @@
             <div class="pull-right">
                 <button type="submit" form="form-site" data-toggle="tooltip" title="{{ button_save }}"
                         class="btn btn-primary"><i class="fa fa-save"></i></button>
-                <a href="{{ cancel }}" data-toggle="tooltip" title="{{ button_cancel }}" class="btn btn-default"><i
-                            class="fa fa-reply"></i></a></div>
+                <a href="{{ cancel }}" data-toggle="tooltip" title="{{ button_cancel }}" class="btn btn-default">
+                    <i class="fa fa-reply"></i></a>
+                <button id="start_grab" type="submit" data-toggle="tooltip" class="btn btn-success"
+                        data-original-title="Старт сканирования">
+                    <i class="fa fa-play" aria-hidden="true"></i>
+                </button>
+                <button id="stop_grab" type="submit" data-toggle="tooltip" class="btn btn-warning"
+                        data-original-title="Остановить сканирование">
+                    <i class="fa fa-stop" aria-hidden="true"></i>
+                </button>
+            </div>
             <h1>{{ heading_title }}</h1>
             <ul class="breadcrumb">
                 {% for breadcrumb in breadcrumbs %}
@@ -24,7 +33,17 @@
         {% endif %}
         <div class="panel panel-default">
             <div class="panel-heading">
-                <h3 class="panel-title"><i class="fa fa-pencil"></i> {{ text_form }}</h3>
+                <!-- NAVIGATION -->
+                <ul class="nav nav-tabs">
+                    {% for page in pages %}
+                        <li role="presentation" class="{{ page['active']}}">
+                            <a href="{{ page['href']}}" id="home-tab" role="tab" aria-controls="home" aria-expanded="true">
+                                {{ page['title']}}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+
             </div>
             <div class="panel-body">
                 <form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-site"

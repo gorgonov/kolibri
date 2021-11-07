@@ -2,6 +2,9 @@
 
 class ModelExtensionModuleArserSite extends Model
 {
+    /**
+     * Создание и заполнение таблицы сайтов для парсинга
+     */
     public function createTables(){
         $this->db->query("CREATE TABLE IF NOT EXISTS `ar_site` (" .
         "`id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID'," .
@@ -39,10 +42,22 @@ class ModelExtensionModuleArserSite extends Model
 
     }
 
+    /**
+     * Удаление сайта
+     *
+     * @param $site_id
+     */
     public function deleteSite($site_id)
     {
         $this->db->query("DELETE FROM ar_site WHERE id = '" . (int)$site_id . "'");
     }
+
+    /**
+     * Вставляет новую строку о сайте для парсинга
+     *
+     * @param $data
+     * @return mixed
+     */
     public function addSite($data)
     {
         $this->db->query("INSERT INTO ar_site SET name = '" . $this->db->escape($data['name'])
@@ -59,6 +74,13 @@ class ModelExtensionModuleArserSite extends Model
         return $site_id;
 
     }
+
+    /**
+     * Сохраняет изменения
+     *
+     * @param $site_id
+     * @param $data
+     */
     public function editSite($site_id, $data)
     {
         $this->db->query("UPDATE ar_site SET name = '" . $this->db->escape($data['name'])
@@ -70,22 +92,47 @@ class ModelExtensionModuleArserSite extends Model
             . ", status = '" . $this->db->escape($data['status'])."'"
             . " WHERE id = '" . $site_id . "'");
     }
+
+    /**
+     * Обновляет сообщение для сайта (стадия обработки)
+     *
+     * @param $site_id
+     * @param $mes
+     */
     public function setMessageSite($site_id, $mes)
     {
         $this->db->query("UPDATE ar_site SET message = '" . $mes . "'"
             . " WHERE id = '" . $site_id . "'");
     }
+
+    /**
+     * устанавливает статус парсинга для сайта
+     * @param $site_id
+     * @param $status
+     */
     public function setStatusSite($site_id, $status)
     {
         $this->db->query("UPDATE ar_site SET status = '" . $status . "'"
             . " WHERE id = '" . $site_id . "'");
     }
+
+    /**
+     * возвращает информацию о сайте для парсинга
+     *
+     * @param $site_id
+     * @return mixed
+     */
     public function getSite($site_id)
     {
         $query = $this->db->query("SELECT DISTINCT * FROM ar_site s WHERE s.id = '" . (int)$site_id . "'");
 
         return $query->row;
     }
+
+    /**
+     * @param array $data
+     * @return mixed
+     */
     public function getSites($data = array())
     {
         $sql = "SELECT * FROM ar_site s";
@@ -127,6 +174,12 @@ class ModelExtensionModuleArserSite extends Model
 
         return $query->rows;
     }
+
+    /**
+     * возвращает количество сайтов для парсинга.
+     *
+     * @return mixed
+     */
     public function getTotalSites()
     {
         $query = $this->db->query("SELECT COUNT(*) AS total FROM ar_site");
@@ -134,28 +187,27 @@ class ModelExtensionModuleArserSite extends Model
         return $query->row['total'];
     }
 
-    // Пересчет количества продуктов и запись в ar_site
+    /**
+     * Пересчет количества продуктов и запись в ar_site
+     */
     public function recalcProducts()
     {
         $this->db->query("UPDATE ar_site a SET productcount = (SELECT COUNT(p.id) FROM ar_product p WHERE a.id=p.site_id);");
     }
 
-
-    // Запись настроек в базу данных
+    /**
+     * Запись настроек в базу данных
+     */
     public function SaveSettings()
     {
         $this->load->model('setting/setting');
         $this->model_setting_setting->editSetting('arser', $this->request->post);
-//        $this->model_setting_setting->editSetting('arser',
-//            [
-//                'arser_status' => 1,
-//                'arser_import_path' => 'трататата',
-//            ]);
-//        $setting = $this->request->post;
-//        $this->model_setting_setting->editSetting('arser', $setting['arser_status']);
-//        $this->model_setting_setting->editSetting('arser', $setting['arser_import_path']);
     }
-    // Загрузка настроек из базы данных
+
+    /**
+     * Получение настроек из базы данных
+     * @return array
+     */
     public function LoadSettings()
     {
 

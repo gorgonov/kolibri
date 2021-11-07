@@ -71,6 +71,7 @@ class ModelToolExportImport extends Model {
 	private $error = array();
 	protected $null_array = array();
 	protected $use_table_seo_url = false;
+	protected $posted_categories = '';
 
 
 	public function __construct( $registry ) {
@@ -351,6 +352,21 @@ class ModelToolExportImport extends Model {
 			$customer_group_ids[$name] = $customer_group_id;
 		}
 		return $customer_group_ids;
+	}
+
+
+	protected function getPostedCategories() {
+		$posted_categories = '';
+		if (isset($this->request->post['categories'])) {
+			if (count($this->request->post['categories']) > 0) {
+				foreach ($this->request->post['categories'] as $category_id) {
+					$posted_categories .= ($posted_categories=='') ? '(' : ',';
+					$posted_categories .= $category_id;
+				}
+				$posted_categories .= ')';
+			}
+		}
+		return $posted_categories;
 	}
 
 
@@ -6125,7 +6141,7 @@ class ModelToolExportImport extends Model {
 			$this->uploadProductOptionValues( $reader, $incremental, $available_product_ids );
 			$this->uploadProductAttributes( $reader, $incremental, $available_product_ids );
 			$this->uploadProductFilters( $reader, $incremental, $available_product_ids );
-			$this->uploadProductSEOKeywords( $reader, $incremental, $available_category_ids );
+			$this->uploadProductSEOKeywords( $reader, $incremental, $available_product_ids );
 			$this->uploadOptions( $reader, $incremental );
 			$this->uploadOptionValues( $reader, $incremental );
 			$this->uploadAttributeGroups( $reader, $incremental );
@@ -6715,8 +6731,16 @@ class ModelToolExportImport extends Model {
 			if ($exist_table_product_tag) {
 				$sql .= "LEFT JOIN `".DB_PREFIX."product_tag` pt ON pt.product_id=p.product_id AND pt.language_id='".(int)$language_id."' ";
 			}
+			if ($this->posted_categories) {
+				$sql .= "LEFT JOIN `".DB_PREFIX."product_to_category` pc ON pc.product_id=p.product_id ";
+			}
 			if (isset($min_id) && isset($max_id)) {
 				$sql .= "WHERE p.product_id BETWEEN $min_id AND $max_id ";
+				if ($this->posted_categories) {
+					$sql .= "AND pc.category_id IN ".$this->posted_categories." ";
+				}
+			} else if ($this->posted_categories) {
+				$sql .= "WHERE pc.category_id IN ".$this->posted_categories." ";
 			}
 			$sql .= "GROUP BY p.product_id ";
 			$sql .= "ORDER BY p.product_id ";
@@ -6779,6 +6803,9 @@ class ModelToolExportImport extends Model {
 		$sql .= "  GROUP_CONCAT( DISTINCT CAST(pr.related_id AS CHAR(11)) SEPARATOR \",\" ) AS related ";
 		$sql .= "FROM `".DB_PREFIX."product` p ";
 		$sql .= "LEFT JOIN `".DB_PREFIX."product_to_category` pc ON p.product_id=pc.product_id ";
+		if ($this->posted_categories) {
+			$sql .= " LEFT JOIN `".DB_PREFIX."product_to_category` pc2 ON p.product_id=pc2.product_id ";
+		}
 		if (!$exist_seo_url_table) {
 			$sql .= "LEFT JOIN `".DB_PREFIX."url_alias` ua ON ua.query=CONCAT('product_id=',p.product_id) ";
 		}
@@ -6790,6 +6817,11 @@ class ModelToolExportImport extends Model {
 		$sql .= "LEFT JOIN `".DB_PREFIX."product_related` pr ON pr.product_id=p.product_id ";
 		if (isset($min_id) && isset($max_id)) {
 			$sql .= "WHERE p.product_id BETWEEN $min_id AND $max_id ";
+			if ($this->posted_categories) {
+				$sql .= "AND pc2.category_id IN ".$this->posted_categories." ";
+			}
+		} else if ($this->posted_categories) {
+			$sql .= "WHERE pc2.category_id IN ".$this->posted_categories." ";
 		}
 		$sql .= "GROUP BY p.product_id ";
 		$sql .= "ORDER BY p.product_id ";
@@ -7105,13 +7137,21 @@ class ModelToolExportImport extends Model {
 
 	protected function getAdditionalImages( $min_id=null, $max_id=null, $exist_sort_order=true  ) {
 		if ($exist_sort_order) {
-			$sql  = "SELECT product_id, image, sort_order ";
+			$sql  = "SELECT DISTINCT pi.product_id, pi.image, pi.sort_order ";
 		} else {
-			$sql  = "SELECT product_id, image ";
+			$sql  = "SELECT DISTINCT pi.product_id, pi.image ";
 		}
-		$sql .= "FROM `".DB_PREFIX."product_image` ";
+		$sql .= "FROM `".DB_PREFIX."product_image` pi ";
+		if ($this->posted_categories) {
+			$sql .= "LEFT JOIN `".DB_PREFIX."product_to_category` pc ON pc.product_id=pi.product_id ";
+		}
 		if (isset($min_id) && isset($max_id)) {
-			$sql .= "WHERE product_id BETWEEN $min_id AND $max_id ";
+			$sql .= "WHERE pi.product_id BETWEEN $min_id AND $max_id ";
+			if ($this->posted_categories) {
+				$sql .= "AND pc.category_id IN ".$this->posted_categories." ";
+			}
+		} else if ($this->posted_categories) {
+			$sql .= "WHERE pc.category_id IN ".$this->posted_categories." ";
 		}
 		if ($exist_sort_order) {
 			$sql .= "ORDER BY product_id, sort_order, image;";
@@ -7178,7 +7218,7 @@ class ModelToolExportImport extends Model {
 		$exist_table_customer_group_description = ($query->num_rows > 0);
 
 		// get the product specials
-		$sql  = "SELECT ps.*, ";
+		$sql  = "SELECT DISTINCT ps.*, ";
 		$sql .= ($exist_table_customer_group_description) ? "cgd.name " : "cg.name ";
 		$sql .= "FROM `".DB_PREFIX."product_special` ps ";
 		if ($exist_table_customer_group_description) {
@@ -7187,8 +7227,16 @@ class ModelToolExportImport extends Model {
 		} else {
 			$sql .= "LEFT JOIN `".DB_PREFIX."customer_group` cg ON cg.customer_group_id=ps.customer_group_id ";
 		}
+		if ($this->posted_categories) {
+			$sql .= "LEFT JOIN `".DB_PREFIX."product_to_category` pc ON pc.product_id=ps.product_id ";
+		}
 		if (isset($min_id) && isset($max_id)) {
 			$sql .= "WHERE ps.product_id BETWEEN $min_id AND $max_id ";
+			if ($this->posted_categories) {
+				$sql .= "AND pc.category_id IN ".$this->posted_categories." ";
+			}
+		} else if ($this->posted_categories) {
+			$sql .= "WHERE pc.category_id IN ".$this->posted_categories." ";
 		}
 		$sql .= "ORDER BY ps.product_id, name, ps.priority";
 		$result = $this->db->query( $sql );
@@ -7258,8 +7306,16 @@ class ModelToolExportImport extends Model {
 		} else {
 			$sql .= "LEFT JOIN `".DB_PREFIX."customer_group` cg ON cg.customer_group_id=pd.customer_group_id ";
 		}
+		if ($this->posted_categories) {
+			$sql .= "LEFT JOIN `".DB_PREFIX."product_to_category` pc ON pc.product_id=pd.product_id ";
+		}
 		if (isset($min_id) && isset($max_id)) {
 			$sql .= "WHERE pd.product_id BETWEEN $min_id AND $max_id ";
+			if ($this->posted_categories) {
+				$sql .= "AND pc.category_id IN ".$this->posted_categories." ";
+			}
+		} else if ($this->posted_categories) {
+			$sql .= "WHERE pc.category_id IN ".$this->posted_categories." ";
 		}
 		$sql .= "ORDER BY pd.product_id ASC, name ASC, pd.quantity ASC";
 		$result = $this->db->query( $sql );
@@ -7323,7 +7379,7 @@ class ModelToolExportImport extends Model {
 		$exist_table_customer_group_description = ($query->num_rows > 0);
 
 		// get the product rewards
-		$sql  = "SELECT pr.*, ";
+		$sql  = "SELECT DISTINCT pr.*, ";
 		$sql .= ($exist_table_customer_group_description) ? "cgd.name " : "cg.name ";
 		$sql .= "FROM `".DB_PREFIX."product_reward` pr ";
 		if ($exist_table_customer_group_description) {
@@ -7332,8 +7388,16 @@ class ModelToolExportImport extends Model {
 		} else {
 			$sql .= "LEFT JOIN `".DB_PREFIX."customer_group` cg ON cg.customer_group_id=pr.customer_group_id ";
 		}
+		if ($this->posted_categories) {
+			$sql .= "LEFT JOIN `".DB_PREFIX."product_to_category` pc ON pc.product_id=pr.product_id ";
+		}
 		if (isset($min_id) && isset($max_id)) {
 			$sql .= "WHERE pr.product_id BETWEEN $min_id AND $max_id ";
+			if ($this->posted_categories) {
+				$sql .= "AND pc.category_id IN ".$this->posted_categories." ";
+			}
+		} else if ($this->posted_categories) {
+			$sql .= "WHERE pc.category_id IN ".$this->posted_categories." ";
 		}
 		$sql .= "ORDER BY pr.product_id, name";
 		$result = $this->db->query( $sql );
@@ -7392,12 +7456,20 @@ class ModelToolExportImport extends Model {
 		} else {
 			$sql  = "SELECT p.product_id, po.option_id, po.option_value, po.required, od.name AS `option` FROM ";
 		}
-		$sql .= "( SELECT product_id ";
-		$sql .= "  FROM `".DB_PREFIX."product` ";
-		if (isset($min_id) && isset($max_id)) {
-			$sql .= "  WHERE product_id BETWEEN $min_id AND $max_id ";
+		$sql .= "( SELECT p1.product_id ";
+		$sql .= "  FROM `".DB_PREFIX."product` p1 ";
+		if ($this->posted_categories) {
+			$sql .= "LEFT JOIN `".DB_PREFIX."product_to_category` pc ON pc.product_id=p1.product_id ";
 		}
-		$sql .= "  ORDER BY product_id ASC ";
+		if (isset($min_id) && isset($max_id)) {
+			$sql .= "  WHERE p1.product_id BETWEEN $min_id AND $max_id ";
+			if ($this->posted_categories) {
+				$sql .= "AND pc.category_id IN ".$this->posted_categories." ";
+			}
+		} else if ($this->posted_categories) {
+			$sql .= "WHERE pc.category_id IN ".$this->posted_categories." ";
+		}
+		$sql .= "  ORDER BY p1.product_id ASC ";
 		$sql .= ") AS p ";
 		$sql .= "INNER JOIN `".DB_PREFIX."product_option` po ON po.product_id=p.product_id ";
 		$sql .= "INNER JOIN `".DB_PREFIX."option_description` od ON od.option_id=po.option_id AND od.language_id='".(int)$language_id."' ";
@@ -7465,10 +7537,18 @@ class ModelToolExportImport extends Model {
 		$sql .= "  p.product_id, pov.option_id, pov.option_value_id, pov.quantity, pov.subtract, od.name AS `option`, ovd.name AS option_value, ";
 		$sql .= "  pov.price, pov.price_prefix, pov.points, pov.points_prefix, pov.weight, pov.weight_prefix ";
 		$sql .= "FROM ";
-		$sql .= "( SELECT product_id ";
-		$sql .= "  FROM `".DB_PREFIX."product` ";
+		$sql .= "( SELECT p1.product_id ";
+		$sql .= "  FROM `".DB_PREFIX."product` p1 ";
+		if ($this->posted_categories) {
+			$sql .= "LEFT JOIN `".DB_PREFIX."product_to_category` pc ON pc.product_id=p1.product_id ";
+		}
 		if (isset($min_id) && isset($max_id)) {
-			$sql .= "  WHERE product_id BETWEEN $min_id AND $max_id ";
+			$sql .= "  WHERE p1.product_id BETWEEN $min_id AND $max_id ";
+			if ($this->posted_categories) {
+				$sql .= "AND pc.category_id IN ".$this->posted_categories." ";
+			}
+		} else if ($this->posted_categories) {
+			$sql .= "WHERE pc.category_id IN ".$this->posted_categories." ";
 		}
 		$sql .= "  ORDER BY product_id ASC ";
 		$sql .= ") AS p ";
@@ -7569,11 +7649,17 @@ class ModelToolExportImport extends Model {
 
 
 	protected function getProductSEOKeywords( &$languages, $min_id, $max_id ) {
-		$sql  = "SELECT * FROM `".DB_PREFIX."seo_url` ";
-		$sql .= "WHERE query LIKE 'product_id=%' AND ";
-		$sql .= "CAST(SUBSTRING(query FROM 12) AS UNSIGNED INTEGER) >= '".(int)$min_id."' AND ";
-		$sql .= "CAST(SUBSTRING(query FROM 12) AS UNSIGNED INTEGER) <= '".(int)$max_id."' ";
-		$sql .= "ORDER BY CAST(SUBSTRING(query FROM 12) AS UNSIGNED INTEGER), store_id, language_id";
+		$sql  = "SELECT s.* FROM `".DB_PREFIX."seo_url` s ";
+		if ($this->posted_categories) {
+			$sql .= "LEFT JOIN `".DB_PREFIX."product_to_category` pc ON pc.product_id=CAST(SUBSTRING(s.query FROM 12) AS UNSIGNED INTEGER) ";
+		}
+		$sql .= "WHERE s.query LIKE 'product_id=%' AND ";
+		if ($this->posted_categories) {
+			$sql .= "pc.category_id IN ".$this->posted_categories." AND ";
+		}
+		$sql .= "CAST(SUBSTRING(s.query FROM 12) AS UNSIGNED INTEGER) >= '".(int)$min_id."' AND ";
+		$sql .= "CAST(SUBSTRING(s.query FROM 12) AS UNSIGNED INTEGER) <= '".(int)$max_id."' ";
+		$sql .= "ORDER BY CAST(SUBSTRING(s.query FROM 12) AS UNSIGNED INTEGER), s.store_id, s.language_id";
 		$query = $this->db->query( $sql );
 		$seo_keywords = array();
 		foreach ($query->rows as $row) {
@@ -7688,8 +7774,16 @@ class ModelToolExportImport extends Model {
 		$sql .= "FROM `".DB_PREFIX."product_attribute` pa ";
 		$sql .= "INNER JOIN `".DB_PREFIX."attribute` a ON a.attribute_id=pa.attribute_id ";
 		$sql .= "INNER JOIN `".DB_PREFIX."attribute_group` ag ON ag.attribute_group_id=a.attribute_group_id ";
+		if ($this->posted_categories) {
+			$sql .= "LEFT JOIN `".DB_PREFIX."product_to_category` pc ON pc.product_id=pa.product_id ";
+		}
 		if (isset($min_id) && isset($max_id)) {
-			$sql .= "WHERE product_id BETWEEN $min_id AND $max_id ";
+			$sql .= "WHERE pa.product_id BETWEEN $min_id AND $max_id ";
+			if ($this->posted_categories) {
+				$sql .= "AND pc.category_id IN ".$this->posted_categories." ";
+			}
+		} else if ($this->posted_categories) {
+			$sql .= "WHERE pc.category_id IN ".$this->posted_categories." ";
 		}
 		$sql .= "ORDER BY pa.product_id ASC, ag.attribute_group_id ASC, pa.attribute_id ASC";
 		$query = $this->db->query( $sql );
@@ -7810,8 +7904,16 @@ class ModelToolExportImport extends Model {
 		$sql .= "FROM `".DB_PREFIX."product_filter` pf ";
 		$sql .= "INNER JOIN `".DB_PREFIX."filter` f ON f.filter_id=pf.filter_id ";
 		$sql .= "INNER JOIN `".DB_PREFIX."filter_group` fg ON fg.filter_group_id=f.filter_group_id ";
+		if ($this->posted_categories) {
+			$sql .= "LEFT JOIN `".DB_PREFIX."product_to_category` pc ON pc.product_id=pf.product_id ";
+		}
 		if (isset($min_id) && isset($max_id)) {
-			$sql .= "WHERE product_id BETWEEN $min_id AND $max_id ";
+			$sql .= "WHERE pf.product_id BETWEEN $min_id AND $max_id ";
+			if ($this->posted_categories) {
+				$sql .= "AND pc.category_id IN ".$this->posted_categories." ";
+			}
+		} else if ($this->posted_categories) {
+			$sql .= "WHERE pc.category_id IN ".$this->posted_categories." ";
 		}
 		$sql .= "ORDER BY pf.product_id ASC, fg.filter_group_id ASC, pf.filter_id ASC";
 		$query = $this->db->query( $sql );
@@ -8744,7 +8846,15 @@ class ModelToolExportImport extends Model {
 
 
 	public function getCountProduct() {
-		$query = $this->db->query( "SELECT COUNT(product_id) as count_product FROM `".DB_PREFIX."product`" );
+		$sql  = "SELECT COUNT(DISTINCT p.product_id) as count_product ";
+		$sql .= "FROM `".DB_PREFIX."product` p ";
+		$posted_categories = $this->getPostedCategories();
+		if ($posted_categories) {
+			$sql .= "LEFT JOIN `".DB_PREFIX."product_to_category` pc ON pc.product_id=p.product_id ";
+			$sql .= "WHERE pc.category_id IN $posted_categories ";
+		}
+		
+		$query = $this->db->query( $sql );
 		if (isset($query->row['count_product'])) {
 			$count = $query->row['count_product'];
 		} else {
@@ -8844,6 +8954,8 @@ class ModelToolExportImport extends Model {
 			$cacheSettings = array( 'memoryCacheSize'  => '16MB' );  
 			PHPExcel_Settings::setCacheStorageMethod($cacheMethod, $cacheSettings);  
 		}
+
+		$this->posted_categories = $this->getPostedCategories();
 
 		try {
 			// set appropriate timeout limit
@@ -9220,7 +9332,7 @@ class ModelToolExportImport extends Model {
 
 	public function getNotifications() {
 		$language_code = $this->config->get( 'config_admin_language' );
-		$result = $this->curl_get_contents("http://www.mhccorp.com/index.php?route=information/message&type=tool_export_import_3_19&language_code=$language_code");
+		$result = $this->curl_get_contents("http://www.mhccorp.com/index.php?route=information/message&type=tool_export_import_3_22&language_code=$language_code");
 		if (stripos($result,'<html') !== false) {
 			return '';
 		}

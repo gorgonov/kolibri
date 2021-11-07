@@ -19,14 +19,19 @@ $_['text_nochange']                         = 'No server data has been changed.'
 $_['text_log_details']                      = 'See also \'System &gt; Error Logs\' for more details.';
 $_['text_log_details_2_0_x']                = 'See also \'Tools &gt; Error Logs\' for more details.';
 $_['text_log_details_2_1_x']                = 'See also \'System &gt; Tools &gt; Error Logs\' for more details.';
+$_['text_log_details_3_x']                  = 'See also the <a href="%1">System &gt; Maintenance &gt; Error Logs</a> for more details.';
 $_['text_loading_notifications']            = 'Getting messages';
 $_['text_retry']                            = 'Retry';
+$_['text_used_category_ids']                = 'Currently used category IDs are between %1 and %2.';
+$_['text_used_product_ids']                 = 'Currently used product IDs are between %1 and %2.';
 
 // Entry
 $_['entry_import']                          = 'Import from a XLS, XLSX or ODS spreadsheet file';
 $_['entry_export']                          = 'Export requested data to a XLSX spreadsheet file.';
 $_['entry_export_type']                     = 'Select what data you want to export:';
 $_['entry_range_type']                      = 'Please select the data range you want to export:';
+$_['entry_category_filter']                 = 'Limit products export by category:';
+$_['entry_category']                        = 'Categories';
 $_['entry_start_id']                        = 'Start id:';
 $_['entry_start_index']                     = 'Counts per batch:';
 $_['entry_end_id']                          = 'End id:';
@@ -128,7 +133,7 @@ $_['error_invalid_product_id_option_id']                = 'Export/Import: Option
 $_['error_missing_option_value_id']                     = 'Export/Import: Missing option_value_ids in worksheet \'%1\'!';
 $_['error_invalid_option_id_option_value_id']           = 'Export/Import: Undefined option_value_id \'%3\' for option_id \'%2\' used in worksheet \'%1\'!';
 $_['error_missing_option_value_name']                   = 'Export/Import: Missing option_value_names in worksheet \'%1\'!';
-$_['error_invalid_option_id_option_value_name']         = 'Export/Import: Undefined option_value_name \'%3\' for optiion_id \'%2\' used in worksheet \'%1\'!'; 
+$_['error_invalid_option_id_option_value_name']         = 'Export/Import: Undefined option_value_name \'%3\' for option_id \'%2\' used in worksheet \'%1\'!'; 
 $_['error_invalid_option_name']                         = 'Export/Import: Undefined option_name \'%2\' used in worksheet \'%1\'!';
 $_['error_invalid_product_id_option_name']              = 'Export/Import: Option_name \'%3\' not specified for product_id \'%2\' in worksheet \'%4\', but it is used in worksheet \'%1\'!';
 $_['error_invalid_option_name_option_value_id']         = 'Export/Import: Undefined option_value_id \'%3\' for option_name \'%2\' used in worksheet \'%1\'!';
@@ -139,7 +144,7 @@ $_['error_missing_attribute_group_name']                = 'Export/Import: Missin
 $_['error_missing_attribute_id']                        = 'Export/Import: Missing attribute_ids in worksheet \'%1\'!';
 $_['error_invalid_attribute_group_id_attribute_id']     = 'Export/Import: Undefined attribute_id \'%3\' for attribute_group_id \'%2\' used in worksheet \'%1\'!';
 $_['error_missing_attribute_name']                      = 'Export/Import: Missing attribute_names in worksheet \'%1\'!';
-$_['error_invalid_attribute_group_id_attribute_name']   = 'Export/Import: Undefined attribute_name \'%3\' for optiion_id \'%2\' used in worksheet \'%1\'!'; 
+$_['error_invalid_attribute_group_id_attribute_name']   = 'Export/Import: Undefined attribute_name \'%3\' for option_id \'%2\' used in worksheet \'%1\'!'; 
 $_['error_invalid_attribute_group_name']                = 'Export/Import: Undefined attribute_group_name \'%2\' used in worksheet \'%1\'!';
 $_['error_invalid_attribute_group_name_attribute_id']   = 'Export/Import: Undefined attribute_id \'%3\' for attribute_group_name \'%2\' used in worksheet \'%1\'!';
 $_['error_invalid_attribute_group_name_attribute_name'] = 'Export/Import: Undefined attribute_name \'%3\' for attribute_group_name \'%2\' used in worksheet \'%1\'!';
@@ -149,7 +154,7 @@ $_['error_missing_filter_group_name']                   = 'Export/Import: Missin
 $_['error_missing_filter_id']                           = 'Export/Import: Missing filter_ids in worksheet \'%1\'!';
 $_['error_invalid_filter_group_id_filter_id']           = 'Export/Import: Undefined filter_id \'%3\' for filter_group_id \'%2\' used in worksheet \'%1\'!';
 $_['error_missing_filter_name']                         = 'Export/Import: Missing filter_names in worksheet \'%1\'!';
-$_['error_invalid_filter_group_id_filter_name']         = 'Export/Import: Undefined filter_name \'%3\' for optiion_id \'%2\' used in worksheet \'%1\'!'; 
+$_['error_invalid_filter_group_id_filter_name']         = 'Export/Import: Undefined filter_name \'%3\' for option_id \'%2\' used in worksheet \'%1\'!'; 
 $_['error_invalid_filter_group_name']                   = 'Export/Import: Undefined filter_group_name \'%2\' used in worksheet \'%1\'!';
 $_['error_invalid_filter_group_name_filter_id']         = 'Export/Import: Undefined filter_id \'%3\' for filter_group_name \'%2\' used in worksheet \'%1\'!';
 $_['error_invalid_filter_group_name_filter_name']       = 'Export/Import: Undefined filter_name \'%3\' for filter_group_name \'%2\' used in worksheet \'%1\'!';
@@ -195,6 +200,7 @@ $_['button_export_page']                    = 'By batches';
 
 // Help
 $_['help_range_type']                       = '(Optional, leave empty if not needed)';
+$_['help_category_filter']                  = '(Optional, leave empty if not needed)';
 $_['help_incremental_yes']                  = '(Update and/or add data)';
 $_['help_incremental_no']                   = '(Delete all old data before Import)';
 $_['help_import']                           = 'Spreadsheet can have categories, products, attribute definitions, option definitions, or filter definitions. ';
