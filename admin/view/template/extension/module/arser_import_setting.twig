@@ -1,0 +1,216 @@
+{# <ol>{% for key, value in _context %}<li>{{ key }}</li> {% endfor %} </ol>#}
+{{ header }}{{ column_left }}
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <div class="pull-right">
+                <button type="submit" form="form-site" data-toggle="tooltip" title="{{ button_save }}"
+                        class="btn btn-primary"><i class="fa fa-save"></i></button>
+                <a href="{{ cancel }}" data-toggle="tooltip" title="{{ button_cancel }}" class="btn btn-default">
+                    <i class="fa fa-reply"></i></a>
+                {# <button id="start_grab" type="submit" data-toggle="tooltip" class="btn btn-success" #}
+                {# data-original-title="Старт сканирования"> #}
+                {# <i class="fa fa-play" aria-hidden="true"></i> #}
+                {# </button> #}
+                {# <button id="stop_grab" type="submit" data-toggle="tooltip" class="btn btn-warning" #}
+                {# data-original-title="Остановить сканирование"> #}
+                {# <i class="fa fa-stop" aria-hidden="true"></i> #}
+                {# </button> #}
+            </div>
+            <h1>{{ heading_title }}</h1>
+            <ul class="breadcrumb">
+                {% for breadcrumb in breadcrumbs %}
+                    <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <div class="container-fluid">
+        {% if error_warning %}
+            <div class="alert alert-danger alert-dismissible"><i
+                        class="fa fa-exclamation-circle"></i> {{ error_warning }}
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+            </div>
+        {% endif %}
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <!-- NAVIGATION -->
+                <ul class="nav nav-tabs">
+                    {% for page in pages %}
+                        <li role="presentation" class="{{ page['active'] }}">
+                            <a href="{{ page['href'] }}" id="home-tab" role="tab" aria-controls="home"
+                               aria-expanded="true">
+                                {{ page['title'] }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+
+            </div>
+
+            <div class="panel-body">
+                <form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-site"
+                      class="form-horizontal">
+
+                    <div class="tab-content">
+                        <div class="tab-pane active">
+
+                            <div class="form-group">
+                                <div class="col-sm-2">
+                                    <label id="lol" for="input-pr">Проект<span data-toggle="tooltip"
+                                                                               data-original-title="Название проекта"></span></label>
+                                    <input name="dn_name" type="text" value="{{ dn_name }}" id="input-pr"
+                                           class="form-control" readonly>
+                                </div>
+                            </div>
+
+                            <div class="form-group required">
+                                <label class="col-sm-2 control-label" for="input-sku">{{ entry_sku }}</label>
+                                <div class="col-sm-4">
+                                    <input type="text" name="sku" value="{{ sku }}"
+                                           placeholder="{{ placeholder_column }}"
+                                           id="input-sku" class="form-control"/>
+                                    {% if error_sku %}
+                                        <div class="text-danger">{{ error_sku }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <label class="col-sm-2 control-label" for="input-id-type">Идентифицировать
+                                    товар{{ entry_tipe_id }}</label>
+                                <div class="col-sm-4">
+                                    <select name="id_type" id="input-id-type" class="form-control">
+                                        {# <option value="0"></option> #}
+                                        {% for id_type in id_types %}
+                                            {% if id_type.id == id_type_selected %}
+                                                <option value="{{ id_type.id }}"
+                                                        selected="selected">{{ id_type.name }}</option>
+                                            {% else %}
+                                                <option value="{{ id_type.id }}">{{ id_type.name }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                    {% if error_attribute_group %}
+                                        <div class="text-danger">{{ error_attribute_group }}</div>
+                                    {% endif %}
+                                </div>
+
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label" for="input-name">{{ entry_name_product }}</label>
+                                <div class="col-sm-4">
+                                    <input type="text" name="name" value="{{ name }}"
+                                           placeholder="{{ placeholder_column }}"
+                                           id="input-name" class="form-control"/>
+                                    {% if error_name %}
+                                        <div class="text-danger">{{ error_name }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label" for="input-barcode">{{ entry_barcode }}</label>
+                                <div class="col-sm-4">
+                                    <input type="text" name="barcode" value="{{ barcode }}"
+                                           placeholder="{{ placeholder_column }}"
+                                           id="input-barcode" class="form-control"/>
+                                    {% if error_barcode %}
+                                        <div class="text-danger">{{ error_barcode }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label" for="input-weight">{{ entry_weight }}</label>
+                                <div class="col-sm-4">
+                                    <input type="text" name="weight" value="{{ weight }}"
+                                           placeholder="{{ placeholder_column }}"
+                                           id="input-weight" class="form-control"/>
+                                    {% if error_weight %}
+                                        <div class="text-danger">{{ error_weight }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label" for="input-volume">{{ entry_volume }}</label>
+                                <div class="col-sm-4">
+                                    <input type="text" name="volume" value="{{ volume }}"
+                                           placeholder="{{ placeholder_column }}"
+                                           id="input-volume" class="form-control"/>
+                                    {% if error_volume %}
+                                        <div class="text-danger">{{ error_volume }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label" for="input-quantity">{{ entry_quantity }}</label>
+                                <div class="col-sm-4">
+                                    <input type="text" name="quantity" value="{{ quantity }}"
+                                           placeholder="{{ placeholder_column }}"
+                                           id="input-quantity" class="form-control"/>
+                                    {% if error_quantity %}
+                                        <div class="text-danger">{{ error_quantity }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label" for="input-price">{{ entry_price }}</label>
+                                <div class="col-sm-4">
+                                    <input type="text" name="price" value="{{ price }}"
+                                           placeholder="{{ placeholder_column }}"
+                                           id="input-price" class="form-control"/>
+                                    {% if error_price %}
+                                        <div class="text-danger">{{ error_price }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label"
+                                       for="input-number_packages">{{ entry_number_packages }}</label>
+                                <div class="col-sm-4">
+                                    <input type="text" name="number_packages" value="{{ number_packages }}"
+                                           placeholder="{{ placeholder_column }}"
+                                           id="input-number_packages" class="form-control"/>
+                                    {% if error_number_packages %}
+                                        <div class="text-danger">{{ error_number_packages }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label"
+                                       for="input-header_rows">{{ entry_header_rows }}</label>
+                                <div class="col-sm-4">
+                                    <input type="text" name="header_rows" value="{{ header_rows }}"
+                                           placeholder="0, если берем с 1 строки"
+                                           id="input-header_rows" class="form-control"/>
+                                    {% if error_header_rows %}
+                                        <div class="text-danger">{{ error_header_rows }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link href="view/javascript/codemirror/lib/codemirror.css" rel="stylesheet"/>
+<link href="view/javascript/codemirror/theme/monokai.css" rel="stylesheet"/>
+<script type="text/javascript" src="view/javascript/codemirror/lib/codemirror.js"></script>
+<script type="text/javascript" src="view/javascript/codemirror/lib/xml.js"></script>
+<script type="text/javascript" src="view/javascript/codemirror/lib/formatting.js"></script>
+
+<script type="text/javascript" src="view/javascript/summernote/summernote.js"></script>
+<link href="view/javascript/summernote/summernote.css" rel="stylesheet"/>
+<script type="text/javascript" src="view/javascript/summernote/summernote-image-attributes.js"></script>
+<script type="text/javascript" src="view/javascript/summernote/opencart.js"></script>
+
+{{ footer }}

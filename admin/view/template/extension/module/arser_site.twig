@@ -1,4 +1,5 @@
 {{ header }}{{ column_left }}
+
 <div id="content">
     <div class="page-header">
         <div class="container-fluid">
@@ -8,11 +9,6 @@
                 <button type="button" data-toggle="tooltip" title="{{ button_delete }}" class="btn btn-danger"
                         onclick="confirm('{{ text_confirm }}') ? $('#form-site').submit() : false;"><i
                             class="fa fa-trash-o"></i></button>
-                <a href="{{ repair }}" data-toggle="tooltip" title="{{ button_rebuild }}" class="btn btn-primary"><i
-                            class="fa fa-refresh"></i></a>
-                <a href="{{ setting }}" data-toggle="tooltip" title="{{ button_setting }}" class="btn btn-primary"><i
-                            class="fa fa-cog"></i></a>
-                {#<button type="button" id="button-setting" title="{{ button_setting }}" data-loading-text="Загрузка..." class="btn btn-default"><i class="fa fa-cog"></i></button>#}
             </div>
             <h1>{{ heading_title }}</h1>
             <ul class="breadcrumb">
@@ -39,7 +35,7 @@
                 <h3 class="panel-title"><i class="fa fa-list"></i> {{ text_list }}</h3>
             </div>
             <div class="panel-body">
-                <form action="{{ delete }}" method="post" enctype="multipart/form-data" id="form-site">
+                <form action="{{ delete }}" method="post" enctype="prefixipart/form-data" id="form-site">
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover">
                             <thead>
@@ -51,11 +47,6 @@
                                         <a href="{{ sort_name }}" class="{{ order|lower }}">name {{ column_name }}</a>
                                     {% else %}
                                         <a href="{{ sort_name }}">name {{ column_name }}</a>
-                                    {% endif %}</td>
-                                <td class="text-center">{% if sort == 'link' %}
-                                        <a href="{{ sort_link }}" class="{{ order|lower }}">link {{ column_link }}</a>
-                                    {% else %}
-                                        <a href="{{ sort_link }}">link {{ column_link }}</a>
                                     {% endif %}</td>
 
                                 <td class="text-center">{% if sort == 'modulname' %}
@@ -72,25 +63,25 @@
                                         <a href="{{ sort_minid }}">minid {{ column_minid }}</a>
                                     {% endif %}</td>
 
-                                <td class="text-center">{% if sort == 'maxid' %}
-                                        <a href="{{ sort_maxid }}"
-                                           class="{{ order|lower }}">maxid {{ column_maxid }}</a>
+                                <td class="text-center">{% if sort == 'prefix' %}
+                                        <a href="{{ sort_prefix }}"
+                                           class="{{ order|lower }}">column_prefix {{ column_prefix }}</a>
                                     {% else %}
-                                        <a href="{{ sort_maxid }}">maxid {{ column_maxid }}</a>
+                                        <a href="{{ sort_prefix }}">prefix {{ column_prefix }}</a>
                                     {% endif %}</td>
 
-                                <td class="text-center">{% if sort == 'mult' %}
-                                        <a href="{{ sort_mult }}"
-                                           class="{{ order|lower }}">column_mult {{ column_mult }}</a>
-                                    {% else %}
-                                        <a href="{{ sort_mult }}">mult {{ column_mult }}</a>
-                                    {% endif %}</td>
+{#                                <td class="text-center">{% if sort == 'status' %}#}
+{#                                        <a href="{{ sort_status }}"#}
+{#                                           class="{{ order|lower }}">column_status {{ column_status }}</a>#}
+{#                                    {% else %}#}
+{#                                        <a href="{{ sort_status }}">status {{ column_status }}</a>#}
+{#                                    {% endif %}</td>#}
 
-                                <td class="text-center">{% if sort == 'status' %}
-                                        <a href="{{ sort_status }}"
-                                           class="{{ order|lower }}">column_status {{ column_status }}</a>
+                                <td class="text-center">{% if sort == 'productcount' %}
+                                        <a href="{{ sort_productcount }}"
+                                           class="{{ order|lower }}">productcount {{ column_productcount }}</a>
                                     {% else %}
-                                        <a href="{{ sort_status }}">status {{ column_status }}</a>
+                                        <a href="{{ sort_productcount }}">productcount {{ column_productcount }}</a>
                                     {% endif %}</td>
 
                                 <td class="text-center">action {{ column_action }}</td>
@@ -107,44 +98,16 @@
                                                 <input type="checkbox" name="selected[]" value="{{ site.id }}"/>
                                             {% endif %}</td>
                                         <td class="text-left">{{ site.name }}</td>
-                                        <td class="text-left">{{ site.link }}</td>
-                                        <td class="text-left">{{ site.modulname }}</td>
-                                        <td class="text-left">{{ site.minid }}</td>
-                                        <td class="text-left">{{ site.maxid }}</td>
-                                        <td class="text-left">{{ site.mult }}</td>
-                                        <td class="text-left">{{ site.status }}                                             <span>({{ site.productcount }})</span>
-                                        </td>
+{#                                        <td class="text-left">{{ site.link }}</td>#}
+                                        <td class="text-center">{{ site.modulname }}</td>
+                                        <td class="text-right">{{ site.min_id }}</td>
+                                        <td class="text-center">{{ site.prefix }}</td>
+{#                                        <td class="text-center">{{ site.status }}#}
+                                        <td class="text-center">{{ site.productcount }}</td>
 
                                         <td class="text-right">
-                                            {# TODO: надо предусмотреть сброс статуса, если парсинг завис #}
-                                            {% if (site.modulname != 'noModule') and (site.status not in ['get', 'parse']) %}
-                                                {% set btnStyle = 'btn-default' %}
-                                                {% if site.status == 'ok' %}
-                                                    {% set btnStyle = 'btn-primary' %}
-                                                {% elseif (site.status in ['new'])  %}
-                                                    {% set btnStyle = 'btn-danger' %}
-                                                {% endif %}
-
-                                                {# выводим кнопки по экспорту#}
-                                                {% if site.productcount > 0 %}
-                                                    <a href="{{ site.export }}" data-toggle="tooltip"
-                                                       title="{{ button_export }}" class="btn {{ btnStyle }}"><i
-                                                                class="fa fa-file-excel-o"></i> Экспорт</a>
-                                                    <a href="{{ site.getimage }}" data-toggle="tooltip"
-                                                       title="{{ button_getimage }}" class="btn {{ btnStyle }} clickmodalimg"><i
-                                                                class="fa fa-file-image-o"></i></a>
-                                                {% endif %}
-
-                                                <a href="{{ site.get }}" data-toggle="tooltip"
-                                                   title="{{ button_get }}" class="btn btn-primary"><i
-                                                            class="fa fa-clock-o"></i> get</a>
-
-                                            {% endif %}
-
-                                            {% if (site.status not in ['get', 'parse']) %}
-                                                <a href="{{ site.edit }}" data-toggle="tooltip" title="{{ button_edit }}"
-                                                   class="btn btn-primary"><i class="fa fa-pencil"></i></a>
-                                            {% endif %}
+                                            <a href="{{ site.edit }}" data-toggle="tooltip" title="{{ button_edit }}"
+                                               class="btn btn-primary"><i class="fa fa-play"></i></a>
                                         </td>
 
 

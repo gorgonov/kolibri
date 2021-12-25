@@ -3,23 +3,9 @@
 class ModelExtensionModuleArserProduct extends Model
 {
 
-    public function createTables()
-    {
-        $this->db->query("CREATE TABLE IF NOT EXISTS `ar_product` (" .
-                "`id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'id'," .
-                "`site_id` int unsigned NOT NULL COMMENT 'id сайта'," .
-                "`name` varchar(255) NOT NULL COMMENT 'Наименование продукта'," .
-                "`price` int NOT NULL COMMENT 'Цена'," .
-                "`product_info` text NOT NULL COMMENT 'Информация о продукте'," .
-                "`images_link` text NOT NULL COMMENT 'Ссылки на картинки - список с разделителем \\n'," .
-                "`status` enum('ok','new','del','price') NOT NULL COMMENT 'Статус: ok|new|del|price'," ."PRIMARY KEY (`id`)" .
-                ") ENGINE=InnoDB AUTO_INCREMENT=90444 DEFAULT CHARSET=utf8;");
-    }
-
-    public function upload($filename, $site_id)
+    public function upload($filename, $importSetting)
     {
         try {
-
             // we use the PHPExcel package from https://github.com/PHPOffice/PHPExcel
             $cwd = getcwd();
             $dir = version_compare(VERSION, '3.0', '>=') ? 'library/export_import' : 'PHPExcel';
@@ -33,20 +19,25 @@ class ModelExtensionModuleArserProduct extends Model
             $objReader->setReadDataOnly(true);
             $reader = $objReader->load($filename);
 
-            if (!$this->validateUpload($reader, $site_id)) { // проверим, хорош ли файл?
-                return false;
-            }
+            // не нужен, оставлен на будущее: может пригодиться
+//            if (!$this->validateUpload($reader, $site_id)) { // проверим, хорош ли файл?
+//                return false;
+//            }
 
-            $this->uploadProducts($reader, $site_id);
+            $this->uploadProducts($reader, $importSetting);
 
             return true;
-
         } catch (Exception $e) {
             $errstr = $e->getMessage();
             $errline = $e->getLine();
             $errfile = $e->getFile();
             $errno = $e->getCode();
-            $this->session->data['export_import_error'] = array('errstr' => $errstr, 'errno' => $errno, 'errfile' => $errfile, 'errline' => $errline);
+            $this->session->data['export_import_error'] = array(
+                'errstr' => $errstr,
+                'errno' => $errno,
+                'errfile' => $errfile,
+                'errline' => $errline
+            );
             if ($this->config->get('config_error_log')) {
                 $this->log->write('PHP ' . get_class($e) . ':  ' . $errstr . ' in ' . $errfile . ' on line ' . $errline);
             }
@@ -54,7 +45,106 @@ class ModelExtensionModuleArserProduct extends Model
         }
     }
 
-    // загрузка в таблицу ar_product данных из открытого XLSX-файла
+    public function deleteProducts(array $productIds)
+    {
+        $idList = implode(',', $productIds);
+        $sql = "SELECT DISTINCT s.* FROM ar_product s WHERE s.id IN ({$idList})";
+        $products = $this->db->query($sql);
+        foreach ($products->rows as $product) {
+            $link = $product['link'];
+            $sql = "
+                UPDATE ar_link SET status = 'new' WHERE link='{$link}';
+            ";
+            $this->db->query($sql);
+        }
+        $sql = " DELETE FROM ar_product ap WHERE ap.id IN ({$idList}) ";
+        $this->db->query($sql);
+    }
+
+    public function deleteProductsBySite(int $siteId)
+    {
+        $sql = " DELETE FROM ar_product WHERE site_id={$siteId} ";
+
+        $this->db->query($sql);
+
+        $sql = "
+            UPDATE ar_link SET status = 'new' WHERE site_id={$siteId};
+        ";
+        $this->db->query($sql);
+    }
+
+    public function addProduct(array $data)
+    {
+        extract($data);
+        $id = $this->getNextId($site_id);
+
+        $weight = $weight ?? '';
+        $images_link = serialize($aImgLink);
+        $attr = serialize($attr);
+        $product_option = isset($product_option) ? serialize($product_option) : '';
+        if (!isset($sku)) {
+            $sku = $id;
+        }
+        $sql = "
+                INSERT IGNORE INTO ar_product SET 
+                    id = {$id},
+                    site_id = {$site_id},
+                    link = '{$link}',
+                    sku = '{$sku}',                              
+                    name = '{$topic}',                              
+                    description = '{$description}',                              
+                    images_link = '{$images_link}',   
+                    status = 'ok',
+                    category1c = '{$category1c}',                               
+                    category = '{$category}',                               
+                    weight = '{$weight}',                               
+                    attr = '{$attr}',                               
+                    `product_option` = '{$product_option}'                               
+        ";
+
+        try {
+            $query = $this->db->query($sql);
+        } catch (Exception $e)  {
+            echo $e->getMessage();
+            // todo убрать
+            echo '<pre>';
+            echo '$sql=';
+            print_r($sql);
+            echo PHP_EOL;
+            die();
+        }
+    }
+
+    public function clearProducts($productIds)
+    {
+        $idList = implode(',', $productIds);
+        $needColumns = ['barcode', 'weight', 'volume', 'quantity', 'price'];
+        $sqlField = [];
+        foreach ($needColumns as $key => $column) {
+            $sqlField[] = $column . "=''";
+        }
+
+        $sql = "UPDATE ar_product SET " . implode(',', $sqlField) . " WHERE id IN ({$idList})";
+        $this->db->query($sql);
+    }
+
+    public function clearProductsBySite($siteId)
+    {
+        $needColumns = ['barcode', 'weight', 'volume', 'quantity', 'price'];
+        $sqlField = [];
+        foreach ($needColumns as $key => $column) {
+            $sqlField[] = $column . "=''";
+        }
+
+        $sql = "UPDATE ar_product SET " . implode(',', $sqlField) . " WHERE site_id={$siteId}";
+        $this->db->query($sql);
+    }
+
+    public function getProduct($productId)
+    {
+        $sql = "SELECT DISTINCT p.* FROM ar_product p WHERE p.id={$productId}";
+        return $this->db->query($sql)->rows;
+    }
 
     protected function validateUpload(&$reader, $site_id)
     {
@@ -81,7 +171,9 @@ class ModelExtensionModuleArserProduct extends Model
     protected function validateWorksheetNames(&$reader)
     {
         // должно быть 10 листов
-        if ($reader->getSheetCount()!=10) return false;
+        if ($reader->getSheetCount() != 10) {
+            return false;
+        }
 
         $allowed_worksheets = array(
             'Products',
@@ -121,222 +213,78 @@ class ModelExtensionModuleArserProduct extends Model
             $minValue = min($minValue, $worksheet->getCell('A' . $row)->getValue());
         }
 
-        return $maxValue<=$site_info['maxid'] and $minValue>=$site_info['minid'];
+        return $maxValue <= $site_info['maxid'] and $minValue >= $site_info['minid'];
     }
 
 
     /**
      * @param PHPExcel_IOFactory::reader $reader
-     * @param integer $site_id
+     * @param integer $siteId
      * @throws PHPExcel_Exception
      */
-      protected function uploadProducts(&$reader, $site_id)
+    protected function uploadProducts(&$reader, $importSetting)
     {
         // get worksheet, if not there return immediately
-        $data = $reader->getSheetByName('Products');
+        $data = $reader->getSheet(0);
         if ($data == null) {
             return;
         }
+        $siteId = $importSetting['site_id'];
+        $headerRows = $importSetting['header_rows'];
+        $allowed = ['name', 'barcode', 'weight', 'volume', 'quantity', 'price', 'sku', 'number_packages'];
+        $needColumns = array_filter(
+            $importSetting,
+            fn ($key) => in_array($key, $allowed) && $importSetting[$key] >= 0,
+            ARRAY_FILTER_USE_KEY
+        );
 
-        // load the worksheet cells and store them to the database
-        $first_row = array();
-        $ar = array();
+        // проверим корректность настроек
+        if (($importSetting['id_type'] == 1) && !isset($needColumns['sku'])) {
+            return;
+        } elseif (($importSetting['id_type'] == 2) && !isset($needColumns['name'])) {
+            return;
+        } elseif (($importSetting['id_type'] == 3) && !isset($needColumns['name'])) {
+            return;
+        }
+
+        if ($importSetting['id_type'] == 1) {
+            $idColumnName = 'sku';
+        } elseif ($importSetting['id_type'] == 2) {
+            $idColumnName = 'name';
+        } elseif ($importSetting['id_type'] == 3) {
+            $idColumnName = 'name';
+        }
 
         $k = $data->getHighestRow();
-        for ($i = 0; $i < $k; $i += 1) {
-            $product_id = $data->getCellByColumnAndRow(1, 8)->getValue();
-
-            $ar["topic"] = $this->normalText($product->first('h4')->text()); // Заголовок товара
-// TODO: с этого места продолжить код
-            //product_id	name(ru-ru)	categories	sku	upc	ean	jan	isbn	mpn	location	quantity	model	manufacturer	image_name	shipping	price	points	date_added	date_modified	date_available	weight	weight_unit	length	width	height	length_unit	status	tax_class_id	description(ru-ru)	meta_title(ru-ru)	meta_description(ru-ru)	meta_keywords(ru-ru)	stock_status_id	store_ids	layout	related_ids	tags(ru-ru)	sort_order	subtract	minimum	price_original	link
-
-            if ($i == 0) {
-                $max_col = PHPExcel_Cell::columnIndexFromString($data->getHighestColumn());
-                for ($j = 1; $j <= $max_col; $j += 1) {
-                    $first_row[] = $this->getCell($data, $i, $j);
-                }
+        for ($i = $headerRows+1; $i < $k; $i += 1) {
+            $sku = trim($data->getCellByColumnAndRow($needColumns[$idColumnName], $i)->getValue());
+            if (empty($sku)) {
                 continue;
             }
-            $j = 1;
-            $product_id = trim($this->getCell($data, $i, $j++));
-            if ($product_id == "") {
-                continue;
-            }
-            $names = array();
-            while ($this->startsWith($first_row[$j - 1], "name(")) {
-                $language_code = substr($first_row[$j - 1], strlen("name("), strlen($first_row[$j - 1]) - strlen("name(") - 1);
-                $name = $this->getCell($data, $i, $j++);
-                $name = htmlspecialchars($name);
-                $names[$language_code] = $name;
-            }
-            $categories = $this->getCell($data, $i, $j++);
-            $sku = $this->getCell($data, $i, $j++, '');
-            $upc = $this->getCell($data, $i, $j++, '');
-            if (in_array('ean', $product_fields)) {
-                $ean = $this->getCell($data, $i, $j++, '');
-            }
-            if (in_array('jan', $product_fields)) {
-                $jan = $this->getCell($data, $i, $j++, '');
-            }
-            if (in_array('isbn', $product_fields)) {
-                $isbn = $this->getCell($data, $i, $j++, '');
-            }
-            if (in_array('mpn', $product_fields)) {
-                $mpn = $this->getCell($data, $i, $j++, '');
-            }
-            $location = $this->getCell($data, $i, $j++, '');
-            $quantity = $this->getCell($data, $i, $j++, '0');
-            $model = $this->getCell($data, $i, $j++, '   ');
-            $manufacturer_name = $this->getCell($data, $i, $j++);
-            $image_name = $this->getCell($data, $i, $j++);
-            $shipping = $this->getCell($data, $i, $j++, 'yes');
-            $price = $this->getCell($data, $i, $j++, '0.00');
-            $points = $this->getCell($data, $i, $j++, '0');
-            $date_added = $this->getCell($data, $i, $j++);
-            $date_added = ((is_string($date_added)) && (strlen($date_added) > 0)) ? $date_added : "NOW()";
-            $date_modified = $this->getCell($data, $i, $j++);
-            $date_modified = ((is_string($date_modified)) && (strlen($date_modified) > 0)) ? $date_modified : "NOW()";
-            $date_available = $this->getCell($data, $i, $j++);
-            $date_available = ((is_string($date_available)) && (strlen($date_available) > 0)) ? $date_available : "NOW()";
-            $weight = $this->getCell($data, $i, $j++, '0');
-            $weight_unit = $this->getCell($data, $i, $j++, $default_weight_unit);
-            $length = $this->getCell($data, $i, $j++, '0');
-            $width = $this->getCell($data, $i, $j++, '0');
-            $height = $this->getCell($data, $i, $j++, '0');
-            $measurement_unit = $this->getCell($data, $i, $j++, $default_measurement_unit);
-            $status = $this->getCell($data, $i, $j++, 'true');
-            $tax_class_id = $this->getCell($data, $i, $j++, '0');
-            if (!$this->use_table_seo_url) {
-                $keyword = $this->getCell($data, $i, $j++);
-            }
-            $descriptions = array();
-            while ($this->startsWith($first_row[$j - 1], "description(")) {
-                $language_code = substr($first_row[$j - 1], strlen("description("), strlen($first_row[$j - 1]) - strlen("description(") - 1);
-                $description = $this->getCell($data, $i, $j++);
-                $description = htmlspecialchars($description);
-                $descriptions[$language_code] = $description;
-            }
-            if ($exist_meta_title) {
-                $meta_titles = array();
-                while ($this->startsWith($first_row[$j - 1], "meta_title(")) {
-                    $language_code = substr($first_row[$j - 1], strlen("meta_title("), strlen($first_row[$j - 1]) - strlen("meta_title(") - 1);
-                    $meta_title = $this->getCell($data, $i, $j++);
-                    $meta_title = htmlspecialchars($meta_title);
-                    $meta_titles[$language_code] = $meta_title;
+            $sqlField = [];
+            foreach ($needColumns as $key => $column) {
+                $str = trim($data->getCellByColumnAndRow($column, $i)->getValue());
+                if ($key == 'quantity') {
+                    $str = filter_var($str, FILTER_SANITIZE_NUMBER_INT);
+//                        $str = preg_replace('!\d+!', '', $str);
                 }
+//                if ($key !== 'name') {
+//                    $sqlField[] = $key . "='" . $str . "'";
+//                }
             }
-            $meta_descriptions = array();
-            while ($this->startsWith($first_row[$j - 1], "meta_description(")) {
-                $language_code = substr($first_row[$j - 1], strlen("meta_description("), strlen($first_row[$j - 1]) - strlen("meta_description(") - 1);
-                $meta_description = $this->getCell($data, $i, $j++);
-                $meta_description = htmlspecialchars($meta_description);
-                $meta_descriptions[$language_code] = $meta_description;
+
+            if ($importSetting['id_type'] == 1) {
+                $where = "sku='{$sku}'";
+            } elseif ($importSetting['id_type'] == 2) {
+                $where = "name='{$sku}'";
+            } elseif ($importSetting['id_type'] == 3) {
+                $where = "name like '%{$sku}%'";
             }
-            $meta_keywords = array();
-            while ($this->startsWith($first_row[$j - 1], "meta_keywords(")) {
-                $language_code = substr($first_row[$j - 1], strlen("meta_keywords("), strlen($first_row[$j - 1]) - strlen("meta_keywords(") - 1);
-                $meta_keyword = $this->getCell($data, $i, $j++);
-                $meta_keyword = htmlspecialchars($meta_keyword);
-                $meta_keywords[$language_code] = $meta_keyword;
-            }
-            $stock_status_id = $this->getCell($data, $i, $j++, $default_stock_status_id);
-            $store_ids = $this->getCell($data, $i, $j++);
-            $layout = $this->getCell($data, $i, $j++);
-            $related = $this->getCell($data, $i, $j++);
-            $tags = array();
-            while ($this->startsWith($first_row[$j - 1], "tags(")) {
-                $language_code = substr($first_row[$j - 1], strlen("tags("), strlen($first_row[$j - 1]) - strlen("tags(") - 1);
-                $tag = $this->getCell($data, $i, $j++);
-                $tag = htmlspecialchars($tag);
-                $tags[$language_code] = $tag;
-            }
-            $sort_order = $this->getCell($data, $i, $j++, '0');
-            $subtract = $this->getCell($data, $i, $j++, 'true');
-            $minimum = $this->getCell($data, $i, $j++, '1');
-            $product = array();
-            $product['product_id'] = $product_id;
-            $product['names'] = $names;
-            $categories = trim($this->clean($categories, false));
-            $product['categories'] = ($categories == "") ? array() : explode(",", $categories);
-            if ($product['categories'] === false) {
-                $product['categories'] = array();
-            }
-            $product['quantity'] = $quantity;
-            $product['model'] = $model;
-            $product['manufacturer_name'] = $manufacturer_name;
-            $product['image'] = $image_name;
-            $product['shipping'] = $shipping;
-            $product['price'] = $price;
-            $product['points'] = $points;
-            $product['date_added'] = $date_added;
-            $product['date_modified'] = $date_modified;
-            $product['date_available'] = $date_available;
-            $product['weight'] = $weight;
-            $product['weight_unit'] = $weight_unit;
-            $product['status'] = $status;
-            $product['tax_class_id'] = $tax_class_id;
-            $product['viewed'] = isset($view_counts[$product_id]) ? $view_counts[$product_id] : 0;
-            $product['descriptions'] = $descriptions;
-            $product['stock_status_id'] = $stock_status_id;
-            if ($exist_meta_title) {
-                $product['meta_titles'] = $meta_titles;
-            }
-            $product['meta_descriptions'] = $meta_descriptions;
-            $product['length'] = $length;
-            $product['width'] = $width;
-            $product['height'] = $height;
-            if (!$this->use_table_seo_url) {
-                $product['seo_keyword'] = $keyword;
-            }
-            $product['measurement_unit'] = $measurement_unit;
-            $product['sku'] = $sku;
-            $product['upc'] = $upc;
-            if (in_array('ean', $product_fields)) {
-                $product['ean'] = $ean;
-            }
-            if (in_array('jan', $product_fields)) {
-                $product['jan'] = $jan;
-            }
-            if (in_array('isbn', $product_fields)) {
-                $product['isbn'] = $isbn;
-            }
-            if (in_array('mpn', $product_fields)) {
-                $product['mpn'] = $mpn;
-            }
-            $product['location'] = $location;
-            $store_ids = trim($this->clean($store_ids, false));
-            $product['store_ids'] = ($store_ids == "") ? array() : explode(",", $store_ids);
-            if ($product['store_ids'] === false) {
-                $product['store_ids'] = array();
-            }
-            $product['related_ids'] = ($related == "") ? array() : explode(",", $related);
-            if ($product['related_ids'] === false) {
-                $product['related_ids'] = array();
-            }
-            $product['layout'] = ($layout == "") ? array() : explode(",", $layout);
-            if ($product['layout'] === false) {
-                $product['layout'] = array();
-            }
-            $product['subtract'] = $subtract;
-            $product['minimum'] = $minimum;
-            $product['meta_keywords'] = $meta_keywords;
-            $product['tags'] = $tags;
-            $product['sort_order'] = $sort_order;
-            if ($incremental) {
-                $this->deleteProduct($product_id, $exist_table_product_tag);
-            }
-            $available_product_ids[$product_id] = $product_id;
-            $this->moreProductCells($i, $j, $data, $product);
-            $this->storeProductIntoDatabase($product, $languages, $product_fields, $exist_table_product_tag, $exist_meta_title, $layout_ids, $available_store_ids, $manufacturers, $weight_class_ids, $length_class_ids, $url_alias_ids);
+
+            // построение запроса
+            $sql = "UPDATE ar_product SET " . implode(',', $sqlField) . " WHERE {$where} AND site_id={$siteId}";
+            $this->db->query($sql);
         }
-    }
-
-    /**
-     * @param $site_id
-     */
-    public function deleteProduct($site_id)
-    {
-        $this->db->query("DELETE FROM ar_product WHERE site_id = '" . (int)$site_id . "'");
     }
 
     /**
@@ -344,16 +292,30 @@ class ModelExtensionModuleArserProduct extends Model
      * @param int $site_id
      * @return array
      */
-    public function getProductCount(int $site_id)
+    public function getProductCount(int $site_id, $search='')
     {
-        $sql="
+        $sql1 = '';
+        if (!empty($search)) {
+            $sql1 .= " AND (sku LIKE '%" . $search . "%'";
+            $sql1 .= " OR category LIKE '%" . $search . "%'";
+            $sql1 .= " OR category1c LIKE '%" . $search . "%'";
+            $sql1 .= " OR name LIKE '%" . $search . "%'";
+            $sql1 .= " OR barcode LIKE '%" . $search . "%'";
+            $sql1 .= " OR weight LIKE '%" . $search . "%'";
+            $sql1 .= " OR volume LIKE '%" . $search . "%'";
+            $sql1 .= " OR quantity LIKE '%" . $search . "%'";
+            $sql1 .= " OR number_packages LIKE '%" . $search . "%'";
+            $sql1 .= " OR price LIKE '%" . $search . "%')";
+        }
+
+        $sql = "
 SELECT status, count(*) count_product
 FROM ar_product
-WHERE site_id={$site_id}
+WHERE site_id={$site_id} {$sql1}
 group by status
 UNION SELECT 'all', count(*) count_product
 FROM ar_product
-WHERE site_id={$site_id}
+WHERE site_id={$site_id} {$sql1}
         ";
 
         $query = $this->db->query($sql);
@@ -372,18 +334,57 @@ WHERE site_id={$site_id}
      * @param string $filter
      * @return mixed
      */
-    public function getProducts(int $site_id, string $filter='all')
+    public function getProducts(int $site_id, array $data=['filter'=>'all'])
     {
         $sql = "SELECT DISTINCT * FROM ar_product s WHERE s.site_id = '" . (int)$site_id . "'";
-        if ($filter == 'all') {
-        } elseif ($filter == 'ok') {
-            $sql .= "AND status='ok'";
-        } elseif ($filter == 'new') {
-            $sql .= "AND status='new'";
-        } elseif ($filter == 'bad') {
-            $sql .= "AND status='bad'";
-        } elseif ($filter == 'del') {
-            $sql .= "AND status='del'";
+
+        if ($data['filter'] != 'all') {
+            $sql .= "AND status='" . $data['filter'] . "'";
+        }
+
+        if (!empty($data['search'])) {
+            $sql .= " AND (sku LIKE '%" . $data['search'] . "%'";
+            $sql .= " OR category LIKE '%" . $data['search'] . "%'";
+            $sql .= " OR category1c LIKE '%" . $data['search'] . "%'";
+            $sql .= " OR name LIKE '%" . $data['search'] . "%'";
+            $sql .= " OR barcode LIKE '%" . $data['search'] . "%'";
+            $sql .= " OR weight LIKE '%" . $data['search'] . "%'";
+            $sql .= " OR volume LIKE '%" . $data['search'] . "%'";
+            $sql .= " OR quantity LIKE '%" . $data['search'] . "%'";
+            $sql .= " OR number_packages LIKE '%" . $data['search'] . "%'";
+            $sql .= " OR price LIKE '%" . $data['search'] . "%')";
+        }
+
+        $sort_data = [
+            'id',
+            'sku',
+            'name',
+            'status',
+            'message',
+        ];
+
+        if (isset($data['sort']) && in_array($data['sort'], $sort_data)) {
+            $sql .= " ORDER BY " . $data['sort'];
+        } else {
+            $sql .= " ORDER BY s.id";
+        }
+
+        if (isset($data['order']) && ($data['order'] == 'DESC')) {
+            $sql .= " DESC";
+        } else {
+            $sql .= " ASC";
+        }
+
+        if (isset($data['start']) || isset($data['limit'])) {
+            if ($data['start'] < 0) {
+                $data['start'] = 0;
+            }
+
+            if ($data['limit'] < 1) {
+                $data['limit'] = 20;
+            }
+
+            $sql .= " LIMIT " . (int)$data['start'] . "," . (int)$data['limit'];
         }
 
         $query = $this->db->query($sql);
@@ -396,5 +397,26 @@ WHERE site_id={$site_id}
         $query = $this->db->query("SELECT COUNT(*) AS total FROM ar_product");
 
         return $query->row['total'];
+    }
+
+    private function getNextId($site_id): int
+    {
+        $id = $this->getLastId($site_id);
+        if ($id) {
+            return $id+1;
+        }
+
+        $this->load->model('extension/module/arser_site');
+        $id = $this->model_extension_module_arser_site->getMinId($site_id);
+
+        return $id;
+    }
+
+    private function getLastId($site_id)
+    {
+        $sql = "SELECT MAX(id) last_id FROM ar_product p WHERE p.site_id = '" . (int)$site_id . "'";
+        $result = $this->db->query($sql);
+
+        return $result->row['last_id'];
     }
 }

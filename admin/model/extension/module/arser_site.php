@@ -60,19 +60,28 @@ class ModelExtensionModuleArserSite extends Model
      */
     public function addSite($data)
     {
-        $this->db->query("INSERT INTO ar_site SET name = '" . $this->db->escape($data['name'])
-            . "', link = '" . $this->db->escape($data['link'])
+        foreach ($data as $key => $datum) {
+            $data[$key] = $this->rusQuote($datum);
+        }
+        $sql = "INSERT INTO ar_site SET name = '" . $this->db->escape($data['name'])
+            . "', min_id = '" . $this->db->escape($data['min_id'])
             . "', modulname = '" . $this->db->escape($data['modulname'])
-            . "', minid = " . $this->db->escape($data['minid'])
-            . ", maxid = " . $this->db->escape($data['maxid'])
-            . ", mult = " . $this->db->escape($data['mult'])
-            . ", status = ''"
-        );
+            . "', provider = '" . $this->db->escape($data['provider'])
+            . "', stock = '" . $this->db->escape($data['stock'])
+            . "', manufacturer = '" . $this->db->escape($data['manufacturer'])
+            . "', maker = '" . $this->db->escape($data['maker'])
+            . "', jan = '" . $this->db->escape($data['jan'])
+            . "', model = '" . $this->db->escape($data['model'])
+            . "', execution_period = '" . $this->db->escape($data['execution_period'])
+            . "', prefix = '" . $this->db->escape($data['prefix'])
+            . "', group_name = '" . $this->db->escape($data['group_name'])
+            ."'";
+
+        $this->db->query($sql);
 
         $site_id = $this->db->getLastId();
 
         return $site_id;
-
     }
 
     /**
@@ -83,14 +92,29 @@ class ModelExtensionModuleArserSite extends Model
      */
     public function editSite($site_id, $data)
     {
+        foreach ($data as $key => $datum) {
+            $data[$key] = $this->rusQuote($datum);
+        }
         $this->db->query("UPDATE ar_site SET name = '" . $this->db->escape($data['name'])
-            . "', link = '" . $this->db->escape($data['link'])
+            . "', min_id = '" . $this->db->escape($data['min_id'])
             . "', modulname = '" . $this->db->escape($data['modulname'])
-            . "', minid = " . $this->db->escape($data['minid'])
-            . ", maxid = " . $this->db->escape($data['maxid'])
-            . ", mult = " . $this->db->escape($data['mult'])
-            . ", status = '" . $this->db->escape($data['status'])."'"
+            . "', provider = '" . $this->db->escape($data['provider'])
+            . "', stock = '" . $this->db->escape($data['stock'])
+            . "', manufacturer = '" . $this->db->escape($data['manufacturer'])
+            . "', maker = '" . $this->db->escape($data['maker'])
+            . "', jan = '" . $this->db->escape($data['jan'])
+            . "', model = '" . $this->db->escape($data['model'])
+            . "', execution_period = '" . $this->db->escape($data['execution_period'])
+            . "', prefix = '" . $this->db->escape($data['prefix'])
+            . "', group_name = '" . $this->db->escape($data['group_name'])
+            ."'"
             . " WHERE id = '" . $site_id . "'");
+    }
+
+    protected function rusQuote(string $str): string
+    {
+        $str = str_replace("&quot;", '"', $str);
+        return preg_replace( '/"([^"]*)"/', "«$1»", $str );
     }
 
     /**
@@ -151,9 +175,8 @@ class ModelExtensionModuleArserSite extends Model
             'name',
             'link',
             'modulname',
-            'minid',
-            'maxid',
-            'mult',
+            'provider',
+            'stock',
             'status',
             'sort_order'
         );
@@ -187,6 +210,13 @@ class ModelExtensionModuleArserSite extends Model
         return $query->row['total'];
     }
 
+    public function getMinId($site_id)
+    {
+        $query = $this->db->query("SELECT * FROM ar_site WHERE id=" . $site_id);
+
+        return $query->row['min_id'];
+    }
+
     /**
      * Пересчет количества продуктов и запись в ar_site
      */
@@ -217,5 +247,4 @@ class ModelExtensionModuleArserSite extends Model
         );
     }
 }
-
 ?>

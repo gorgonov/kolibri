@@ -7,14 +7,6 @@
                         class="btn btn-primary"><i class="fa fa-save"></i></button>
                 <a href="{{ cancel }}" data-toggle="tooltip" title="{{ button_cancel }}" class="btn btn-default">
                     <i class="fa fa-reply"></i></a>
-                <button id="start_grab" type="submit" data-toggle="tooltip" class="btn btn-success"
-                        data-original-title="Старт сканирования">
-                    <i class="fa fa-play" aria-hidden="true"></i>
-                </button>
-                <button id="stop_grab" type="submit" data-toggle="tooltip" class="btn btn-warning"
-                        data-original-title="Остановить сканирование">
-                    <i class="fa fa-stop" aria-hidden="true"></i>
-                </button>
             </div>
             <h1>{{ heading_title }}</h1>
             <ul class="breadcrumb">
@@ -36,9 +28,10 @@
                 <!-- NAVIGATION -->
                 <ul class="nav nav-tabs">
                     {% for page in pages %}
-                        <li role="presentation" class="{{ page['active']}}">
-                            <a href="{{ page['href']}}" id="home-tab" role="tab" aria-controls="home" aria-expanded="true">
-                                {{ page['title']}}
+                        <li role="presentation" class="{{ page['active'] }}">
+                            <a href="{{ page['href'] }}" id="home-tab" role="tab" aria-controls="home"
+                               aria-expanded="true">
+                                {{ page['title'] }}
                             </a>
                         </li>
                     {% endfor %}
@@ -50,29 +43,28 @@
                       class="form-horizontal">
                     <div class="form-group required">
                         <label class="col-sm-2 control-label" for="input-name">{{ entry_name }}</label>
-                        <div class="col-sm-10">
+                        <div class="col-sm-4">
                             <input type="text" name="name" value="{{ name }}" placeholder="{{ entry_name }}"
                                    id="input-name" class="form-control"/>
                             {% if error_name %}
                                 <div class="text-danger">{{ error_name }}</div>
                             {% endif %}
                         </div>
-                    </div>
 
-                    <div class="form-group required">
-                        <label class="col-sm-2 control-label" for="input-link">{{ entry_link }}</label>
-                        <div class="col-sm-10">
-                            <input type="text" name="link" value="{{ link }}" placeholder="{{ entry_link }}"
-                                   id="input-link" class="form-control"/>
-                            {% if error_link %}
-                                <div class="text-danger">{{ error_link }}</div>
+                        <label class="col-sm-2 control-label" for="input-min_id">{{ entry_min_id }}</label>
+                        <div class="col-sm-4">
+                            <input type="text" name="min_id" value="{{ min_id }}" placeholder="{{ entry_min_id }}"
+                                   id="input-name" class="form-control"/>
+                            {% if error_min_id %}
+                                <div class="text-danger">{{ error_min_id }}</div>
                             {% endif %}
                         </div>
+
                     </div>
 
                     <div class="form-group required">
                         <label class="col-sm-2 control-label" for="input-modulname">{{ entry_modulname }}</label>
-                        <div class="col-sm-10">
+                        <div class="col-sm-4">
                             <input type="text" name="modulname" value="{{ modulname }}"
                                    placeholder="{{ entry_modulname }}"
                                    id="input-modulname" class="form-control"/>
@@ -80,50 +72,96 @@
                                 <div class="text-danger">{{ error_modulname }}</div>
                             {% endif %}
                         </div>
-                    </div>
 
-                    <div class="form-group required">
-                        <label class="col-sm-2 control-label" for="input-minid">{{ entry_minid }}</label>
-                        <div class="col-sm-10">
-                            <input type="text" name="minid" value="{{ minid }}" placeholder="{{ entry_minid }}"
-                                   id="input-minid" class="form-control"/>
-                            {% if error_minid %}
-                                <div class="text-danger">{{ error_minid }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="col-sm-2 control-label" for="input-maxid">{{ entry_maxid }}</label>
-                        <div class="col-sm-10">
-                            <input type="text" name="maxid" value="{{ maxid }}" placeholder="{{ entry_maxid }}"
-                                   id="input-maxid" class="form-control"/>
-                            {% if error_maxid %}
-                                <div class="text-danger">{{ error_maxid }}</div>
+                        <label class="col-sm-2 control-label" for="input-prefix">{{ entry_prefix }}</label>
+                        <div class="col-sm-4">
+                            <input type="text" name="prefix" value="{{ prefix }}" placeholder="{{ entry_prefix }}"
+                                   id="input-prefix" class="form-control"/>
+                            {% if error_prefix %}
+                                <div class="text-danger">{{ error_prefix }}</div>
                             {% endif %}
                         </div>
                     </div>
 
                     <div class="form-group required">
-                        <label class="col-sm-2 control-label" for="input-mult">{{ entry_mult }}</label>
-                        <div class="col-sm-10">
-                            <input type="text" name="mult" value="{{ mult }}" placeholder="{{ entry_mult }}"
-                                   id="input-mult" class="form-control"/>
-                            {% if error_mult %}
-                                <div class="text-danger">{{ error_mult }}</div>
+                        <label class="col-sm-2 control-label" for="input-model">{{ entry_model }}</label>
+                        <div class="col-sm-4">
+                            <input type="text" name="model" value="{{ model }}" placeholder="{{ entry_model }}"
+                                   id="input-model" class="form-control"/>
+                            {% if error_model %}
+                                <div class="text-danger">{{ error_model }}</div>
+                            {% endif %}
+                        </div>
+
+                        <label class="col-sm-2 control-label" for="input-jan">{{ entry_jan }}</label>
+                        <div class="col-sm-4">
+                            <input type="text" name="jan" value="{{ jan }}" placeholder="{{ entry_jan }}"
+                                   id="input-jan" class="form-control"/>
+                            {% if error_jan %}
+                                <div class="text-danger">{{ error_jan }}</div>
                             {% endif %}
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label class="col-sm-2 control-label" for="input-status">{{ entry_status }}</label>
-                        <div class="col-sm-10">
-                            <input type="text" name="status" value="{{ status }}" placeholder="{{ entry_status }}"
-                                   id="input-status" class="form-control"/>
-                            {% if error_status %}
-                                <div class="text-danger">{{ error_status }}</div>
+                    <div class="form-group required">
+                        <label class="col-sm-2 control-label" for="input-manufacturer">{{ entry_manufacturer }}</label>
+                        <div class="col-sm-4">
+                            <input type="text" name="manufacturer" value="{{ manufacturer }}" placeholder="{{ entry_manufacturer }}"
+                                   id="input-manufacturer" class="form-control"/>
+                            {% if error_manufacturer %}
+                                <div class="text-danger">{{ error_manufacturer }}</div>
                             {% endif %}
                         </div>
+
+                        <label class="col-sm-2 control-label" for="input-provider">{{ entry_provider }}</label>
+                        <div class="col-sm-4">
+                            <input type="text" name="provider" value="{{ provider }}" placeholder="{{ entry_provider }}"
+                                   id="input-provider" class="form-control"/>
+                            {% if error_provider %}
+                                <div class="text-danger">{{ error_provider }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-group required">
+                        <label class="col-sm-2 control-label" for="input-stock">{{ entry_stock }}</label>
+                        <div class="col-sm-4">
+                            <input type="text" name="stock" value="{{ stock }}" placeholder="{{ entry_stock }}"
+                                   id="input-stock" class="form-control"/>
+                            {% if error_stock %}
+                                <div class="text-danger">{{ error_stock }}</div>
+                            {% endif %}
+                        </div>
+
+                        <label class="col-sm-2 control-label" for="input-maker">{{ entry_maker }}</label>
+                        <div class="col-sm-4">
+                            <input type="text" name="maker" value="{{ maker }}" placeholder="{{ entry_maker }}"
+                                   id="input-maker" class="form-control"/>
+                            {% if error_maker %}
+                                <div class="text-danger">{{ error_maker }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-group required">
+                        <label class="col-sm-2 control-label" for="input-execution_period">{{ entry_execution_period }}</label>
+                        <div class="col-sm-4">
+                            <input type="text" name="execution_period" value="{{ execution_period }}" placeholder="{{ entry_execution_period }}"
+                                   id="input-execution_period" class="form-control"/>
+                            {% if error_execution_period %}
+                                <div class="text-danger">{{ error_execution_period }}</div>
+                            {% endif %}
+                        </div>
+
+                        <label class="col-sm-2 control-label" for="input-group_name">{{ entry_group_name }}</label>
+                        <div class="col-sm-4">
+                            <input type="text" name="group_name" value="{{ group_name }}" placeholder="{{ entry_group_name }}"
+                                   id="input-group_name" class="form-control"/>
+                            {% if error_group_name %}
+                                <div class="text-danger">{{ error_group_name }}</div>
+                            {% endif %}
+                        </div>
+
                     </div>
 
                 </form>

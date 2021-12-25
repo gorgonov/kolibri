@@ -1,103 +1,64 @@
 <?php
 
-class ModelExtensionModuleArserSite extends Model
+class ModelExtensionModuleArserLink extends Model
 {
-    public function createTables(){
-        $this->db->query(
-            "
-create table ar_link
-(
-    id            int unsigned auto_increment comment 'id'
-        primary key,
-    site_id       int unsigned  not null comment 'id сайта',
-    category_list varchar(255)  not null comment 'id категорий через запятую',
-    link          varchar(255)  not null comment 'Ссылка на товар/группу товаров',
-    is_group      int default 0 null comment '1, если группа (страница, где ищем ссылки на товары)',
-    constraint ar_links_category_list_uindex
-        unique (category_list),
-    constraint ar_links_link_uindex
-        unique (link)
-)
-    comment 'Ссылки для парсинга';
-            "
-        );
-    }
-
-    public function deleteSite($site_id)
-    {
-        $this->db->query("DELETE FROM ar_link WHERE siet_id = '" . (int)$site_id . "'");
-    }
-
     /**
-     * @param int $site_id
      * @param array $data
-     * @param int $erase
      * @return bool
      */
-    public function addLinks(int $site_id, array $data, int $erase = 1): bool
+    public function addLinks(array $data): bool
     {
-        if ($erase) {
-            $this->deleteSite($site_id);
-        }
-
         foreach ($data as $datum) {
-            $this->db->query("INSERT INTO ar_site SET site_id = " . $site_id
-                . "', category_list = '" . $this->db->escape($data['category_list'])
-                . "', link = '" . $this->db->escape($data['link'])
-                . "', is_group = " . $this->db->escape($data['is_group'])
-            );
+            $sql = "
+                INSERT IGNORE INTO ar_link SET 
+                    site_id = {$datum['site_id']},
+                    category_list = '{$datum['category_list']}',
+                    link = '{$datum['link']}',
+                    is_group = {$datum['is_group']},
+                    category1c = '{$datum['category1c']}',
+                    status = '{$datum['status']}'
+            ";
+            $this->db->query($sql);
         }
 
         return true;
     }
 
-//    public function editSite($site_id, $data)
-//    {
-//        $this->db->query("UPDATE ar_site SET name = '" . $this->db->escape($data['name'])
-//            . "', link = '" . $this->db->escape($data['link'])
-//            . "', modulname = '" . $this->db->escape($data['modulname'])
-//            . "', minid = " . $this->db->escape($data['minid'])
-//            . ", maxid = " . $this->db->escape($data['maxid'])
-//            . ", mult = " . $this->db->escape($data['mult'])
-//            . ", status = '" . $this->db->escape($data['status'])."'"
-//            . " WHERE id = '" . $site_id . "'");
-//    }
-
-    public function getLink($site_id)
+    public function getGroupLink($site_id, $is_group = 1)
     {
-        $query = $this->db->query("SELECT DISTINCT * FROM ar_site s WHERE s.id = '" . (int)$site_id . "'");
+        $sql = "SELECT DISTINCT * FROM ar_link WHERE site_id = {$site_id} AND is_group = {$is_group}";
+        $query = $this->db->query($sql);
 
-        return $query->row;
+        return $query->rows;
     }
-    public function getSites($data = array())
+
+    public function getLink($site_id, array $data)
     {
-        $sql = "SELECT * FROM ar_site s";
+        $sql = "SELECT DISTINCT * FROM ar_link WHERE site_id = '" . (int)$site_id . "'";
 
-        if (!empty($data['filter_name'])) {
-            $sql .= " AND s.name LIKE '" . $this->db->escape($data['filter_name']) . "%'";
+        if ($data['filter'] != 'all') {
+            $sql .= "AND status='" . $data['filter'] . "'";
         }
 
-        if (isset($data['filter_status']) && $data['filter_status'] !== '') {
-            $sql .= " AND s.status = '" . (int)$data['filter_status'] . "'";
+        if (!empty($data['search'])) {
+            $sql .= "AND (id LIKE '%" . $data['search'] . "%'";
+            $sql .= " OR link LIKE '%" . $data['search'] . "%'";
+            $sql .= " OR category1c LIKE '%" . $data['search'] . "%')";
         }
 
-//        $sql .= " GROUP BY p.product_id";
-
-        $sort_data = array(
-            'name',
+        $sort_data = [
+            'id',
+            'category_list',
             'link',
-            'modulname',
-            'minid',
-            'maxid',
-            'mult',
+            'is_group',
+            'category1c',
             'status',
-            'sort_order'
-        );
+        ];
 
         if (isset($data['sort']) && in_array($data['sort'], $sort_data)) {
             $sql .= " ORDER BY " . $data['sort'];
         } else {
-            $sql .= " ORDER BY s.name";
+            $sql .= " ORDER BY id";
         }
 
         if (isset($data['order']) && ($data['order'] == 'DESC')) {
@@ -106,23 +67,22 @@ create table ar_link
             $sql .= " ASC";
         }
 
+        if (isset($data['start']) || isset($data['limit'])) {
+            if ($data['start'] < 0) {
+                $data['start'] = 0;
+            }
+
+            if ($data['limit'] < 1) {
+                $data['limit'] = 20;
+            }
+
+            $sql .= " LIMIT " . (int)$data['start'] . "," . (int)$data['limit'];
+        }
+
         $query = $this->db->query($sql);
 
         return $query->rows;
     }
-    public function getTotalSites()
-    {
-        $query = $this->db->query("SELECT COUNT(*) AS total FROM ar_site");
-
-        return $query->row['total'];
-    }
-
-    // Пересчет количества продуктов и запись в ar_site
-    public function recalcProducts()
-    {
-        $this->db->query("UPDATE ar_site a SET productcount = (SELECT COUNT(p.id) FROM ar_product p WHERE a.id=p.site_id);");
-    }
-
 
     // Запись настроек в базу данных
     public function SaveSettings()
@@ -138,14 +98,182 @@ create table ar_link
 //        $this->model_setting_setting->editSetting('arser', $setting['arser_status']);
 //        $this->model_setting_setting->editSetting('arser', $setting['arser_import_path']);
     }
+
     // Загрузка настроек из базы данных
     public function LoadSettings()
     {
-
         return array(
             'arser_status' => $this->config->get('arser_status'),
             'arser_import_path' => $this->config->get('arser_import_path')
         );
+    }
+
+    public function upload($filename, $site_id)
+    {
+        try {
+            // we use the PHPExcel package from https://github.com/PHPOffice/PHPExcel
+            $cwd = getcwd();
+            $dir = version_compare(VERSION, '3.0', '>=') ? 'library/export_import' : 'PHPExcel';
+            chdir(DIR_SYSTEM . $dir);
+            require_once('Classes/PHPExcel.php');
+            chdir($cwd);
+
+            // parse uploaded spreadsheet file
+
+            //--- create php excel object ---
+            ini_set('memory_limit', '3500M');
+            $cacheMethod = PHPExcel_CachedObjectStorageFactory::cache_to_phpTemp;
+            $cacheSettings = array('memoryCacheSize' => '800MB');
+            //set php excel settings
+            PHPExcel_Settings::setCacheStorageMethod(
+                $cacheMethod, $cacheSettings
+            );
+
+            $inputFileType = PHPExcel_IOFactory::identify($filename);
+            $objReader = PHPExcel_IOFactory::createReader($inputFileType);
+            $objReader->setReadDataOnly(true);
+            $reader = $objReader->load($filename);
+
+            // не нужен, оставлен на будущее: может пригодиться
+//            if (!$this->validateUpload($reader, $site_id)) { // проверим, хорош ли файл?
+//                return false;
+//            }
+
+            $this->uploadLinks($reader, $site_id);
+
+            return true;
+        } catch (Exception $e) {
+            $errstr = $e->getMessage();
+            $errline = $e->getLine();
+            $errfile = $e->getFile();
+            $errno = $e->getCode();
+            $this->session->data['export_import_error'] = array(
+                'errstr' => $errstr,
+                'errno' => $errno,
+                'errfile' => $errfile,
+                'errline' => $errline
+            );
+            if ($this->config->get('config_error_log')) {
+                $this->log->write('PHP ' . get_class($e) . ':  ' . $errstr . ' in ' . $errfile . ' on line ' . $errline);
+            }
+            return false;
+        }
+    }
+
+    /**
+     * @param PHPExcel_IOFactory::reader $reader
+     * @param integer $siteId
+     * @throws PHPExcel_Exception
+     */
+    protected function uploadLinks(&$reader, $siteId)
+    {
+        $data = $reader->getSheetByName('Группы');
+        if (!is_null($data)) {
+            $maxRow = $data->getHighestRow();
+            for ($row = 2; $row < $maxRow + 1; $row++) {
+                $category = $data->getCellByColumnAndRow(0, $row)->getValue();
+                $link = $data->getCellByColumnAndRow(1, $row)->getValue();
+                $category1c = $data->getCellByColumnAndRow(2, $row)->getValue();
+                if (!empty($link)) {
+                    $sql = "
+                    INSERT INTO ar_link SET 
+                        site_id = {$siteId},
+                        link = '{$link}',
+                        category_list = '{$category}',
+                        category1c = '{$category1c}',
+                        is_group = 1,
+                        status = 'new'                    
+                    ";
+                    try {
+                        $this->db->query($sql);
+                    } catch (Exception $exception) {
+                        echo 'пропустили неверную ссылку '
+                            . PHP_EOL . $exception->getMessage() . PHP_EOL;
+                    }
+                }
+            }
+        }
+
+        $data = $reader->getSheetByName('Товары');
+        if (!is_null($data)) {
+            $maxRow = $data->getHighestRow();
+            for ($row = 2; $row < $maxRow + 1; $row++) {
+                $category = $data->getCellByColumnAndRow(0, $row)->getValue();
+                $link = $data->getCellByColumnAndRow(1, $row)->getValue();
+                $category1c = $data->getCellByColumnAndRow(2, $row)->getValue();
+
+                if (!empty($link)) {
+                    $sql = "
+                    INSERT INTO ar_link SET 
+                        site_id = {$siteId},
+                        link = '{$link}',
+                        category_list = '{$category}',
+                        category1c = '{$category1c}',
+                        is_group = 0,
+                        status = 'new'               
+                ";
+                    $this->db->query($sql);
+                }
+            }
+        }
+    }
+
+    public function getLinkCount($siteId, $search = '')
+    {
+        $sql1 = '';
+        if (!empty($search)) {
+            $sql1 .= " AND (id LIKE '%" . $search . "%'";
+            $sql1 .= " OR link LIKE '%" . $search . "%'";
+            $sql1 .= " OR category1c LIKE '%" . $search . "%')";
+        }
+
+        $sql = "
+SELECT status, count(*) count_link
+FROM ar_link
+WHERE site_id={$siteId} {$sql1}
+group by status
+UNION SELECT 'all', count(*) count_link
+FROM ar_link
+WHERE site_id={$siteId} {$sql1}
+        ";
+
+
+        $query = $this->db->query($sql);
+        $result = [];
+        foreach ($query->rows as $row) {
+            $result[$row['status']] = $row['count_link'];
+        }
+
+        return $result;
+    }
+
+    public function deleteLinks($linkIds)
+    {
+        $idList = implode(',', $linkIds);
+        $sql = " DELETE FROM ar_link WHERE id IN ({$idList}) ";
+        $this->db->query($sql);
+    }
+
+    public function deleteLinksBySite($siteId)
+    {
+        $sql = " DELETE FROM ar_link WHERE site_id={$siteId} ";
+        $this->db->query($sql);
+    }
+
+    public function setStatus($id, string $newStatus, $message = '')
+    {
+        $sql = "
+            UPDATE ar_link SET status = '{$newStatus}', message='{$message}' WHERE id={$id};
+        ";
+        $this->db->query($sql);
+    }
+
+    public function getNextLink($siteId)
+    {
+        $sql = "SELECT DISTINCT * FROM ar_link WHERE site_id = {$siteId} AND is_group=0 AND status='new' LIMIT 1";
+        $query = $this->db->query($sql);
+
+        return $query->rows;
     }
 }
 

@@ -8,18 +8,10 @@
         <div class="container-fluid">
 
             <div class="pull-right">
-                {# <button type="submit" form="form-grab" data-toggle="tooltip" title="{{ button_save }}" #}
+                {# <button type="submit" form="form-product" data-toggle="tooltip" title="{{ button_save }}" #}
                 {# class="btn btn-primary"><i class="fa fa-save"></i></button> #}
                 {# <a href="{{ cancel }}" data-toggle="tooltip" title="{{ button_cancel }}" class="btn btn-default"> #}
                 {# <i class="fa fa-reply"></i></a> #}
-                {# <button id="start_grab" type="submit" data-toggle="tooltip" class="btn btn-success" #}
-                {# data-original-title="Старт сканирования"> #}
-                {# <i class="fa fa-play" aria-hidden="true"></i> #}
-                {# </button> #}
-                {# <button id="stop_grab" type="submit" data-toggle="tooltip" class="btn btn-warning" #}
-                {# data-original-title="Остановить сканирование"> #}
-                {# <i class="fa fa-stop" aria-hidden="true"></i> #}
-                {# </button> #}
             </div>
             <h1>{{ heading_title }}</h1>
             <!-- BREADCRUMBS -->
@@ -72,7 +64,7 @@
                         <div class="tab-pane active">
                             <!-- прогрессбар -->
                             <div id="progress" class="form-group" hidden>
-                                <label class="col-sm-2 control-label">Раскрываем группы</label>
+                                <label class="col-sm-2 control-label">Парсим продукты</label>
                                 <div class="col-sm-10">
                                     <div class="progress">
                                         <div class="progress-bar progress-bar-warning progress-bar-striped active"
@@ -95,61 +87,23 @@
                             <div class="form-group">
                                 <div class="col-sm-9">
                                     <div>
-                                        <label for="filter_link_domain">Импорт ссылок из файла<span
-                                                    data-toggle="tooltip"
-                                                    data-original-title="Для загрузки ссылок вам необходимо выбрать xlsx-файл со следующей структурой:<br> Лист <Группы> с колонками <Категория>, <ссылка>,<Категория 1С>.<br>Лист <Товары> с той же структурой."></span>
-                                        </label>
                                         <div class="form-group">
                                             <div class="col-sm-6">
-                                                <div class="input-group">
-                                                    <label class="input-group-btn">
-                                                        <input name="import" type="file" form="form_file"
-                                                               class="main_input_file"/>
-                                                        <div class="btn btn-default">Выбрать файл…</div>
-                                                    </label>
-                                                    <input type="text" class="form-control" id="import"
-                                                           value="Файл не выбран."
-                                                           readonly>
-                                                    <span class="input-group-btn">
-                    <button class="btn btn-success" type="submit" form="form_file" name="file" value="file_links">
-                      <i class="fa fa-download" aria-hidden="true"></i> Импортировать ссылки
-                    </button>
-                  </span>
-                                                </div>
-                                                <script>
-                                                    $(document).ready(function () {
-                                                        $(".main_input_file").change(function () {
-                                                            var f_name = [];
-                                                            for (var i = 0; i < $(this).get(0).files.length; ++i) {
-                                                                f_name.push(" " + $(this).get(0).files[i].name);
-                                                            }
-                                                            $("#import").val(f_name.join(", "));
-                                                            $("#import").attr("value", $("#import").val());
-                                                        });
-                                                    });
-                                                </script>
-                                                <style>
-                                                    input[type="file"] {
-                                                        display: none;
-                                                    }
-                                                </style>
+                                                <button type="submit" id="del_mark_link" name="del_mark_link"
+                                                        class="btn btn-warning"
+                                                        onclick="return confirm('Вы уверены что хотите удалить помеченные ссылки на товары?\n\nОперация необратима!')">
+                                                    <i class="fa fa-trash" aria-hidden="true"></i> Удалить помеченные
+                                                </button>
+                                                <button type="submit" name="del_finish_link" class="btn btn-danger"
+                                                        form="form_del"
+                                                        onclick="return confirm('Вы уверены что хотите удалить все ссылки на товары?\n\nОперация необратима!')">
+                                                    <i class="fa fa-trash" aria-hidden="true"></i> Удалить все
+                                                </button>
                                             </div>
-
-                                            <button type="submit" id="del_mark_link" name="del_mark_link"
-                                                    class="btn btn-warning"
-                                                    onclick="return confirm('Вы уверены что хотите удалить помеченные ссылки на товары?\n\nОперация необратима!')">
-                                                <i class="fa fa-trash" aria-hidden="true"></i> Удалить помеченные
-                                            </button>
-                                            <button type="submit" name="del_finish_link" class="btn btn-danger"
-                                                    form="form_del"
-                                                    onclick="return confirm('Вы уверены что хотите удалить все ссылки на товары?\n\nОперация необратима!')">
-                                                <i class="fa fa-trash" aria-hidden="true"></i> Удалить все
-                                            </button>
                                         </div>
                                     </div>
-
-                                    <label for="links">Очередь сканирования ссылок<span data-toggle="tooltip"
-                                                                                        data-original-title="В этом поле записываются ссылки по которым будет ходить модуль в поиске ссылок на товар."></span>
+                                    <label for="links">Продукты<span data-toggle="tooltip"
+                                                                     data-original-title="Список просканированных товаров"></span>
                                     </label>
 
                                     <div class="table-responsive">
@@ -162,28 +116,28 @@
                                                 </td>
                                                 <td class="text-center">
                                                     {% if sort == 'id' %}
-                                                        <a href="{{ sort_id }}"
-                                                           class="{{ order|lower }}">column_id{{ column_id }}</a>
+                                                        <a href="{{ sort_sku }}"
+                                                           class="{{ order|lower }}">column_sku{{ column_sku }}</a>
                                                     {% else %}
-                                                        <a href="{{ sort_id }}">id {{ column_id }}</a>
+                                                        <a href="{{ sort_sku }}">sku {{ column_sku }}</a>
                                                     {% endif %}
                                                 </td>
 
                                                 <td class="text-center">
                                                     {% if sort == 'category_list' %}
-                                                        <a href="{{ sort_category_list }}"
-                                                           class="{{ order|lower }}">column_category_list {{ column_category_list }}</a>
+                                                        <a href="{{ sort_category }}"
+                                                           class="{{ order|lower }}">column_category {{ column_category }}</a>
                                                     {% else %}
-                                                        <a href="{{ sort_category_list }}">category_list {{ column_category_list }}</a>
+                                                        <a href="{{ sort_category }}">category {{ column_category }}</a>
                                                     {% endif %}
                                                 </td>
 
                                                 <td class="text-center">
-                                                    {% if sort == 'link' %}
-                                                        <a href="{{ sort_link }}"
-                                                           class="{{ order|lower }}">{{ column_link }}</a>
+                                                    {% if sort == 'name' %}
+                                                        <a href="{{ sort_name }}"
+                                                           class="{{ order|lower }}">{{ column_name }}</a>
                                                     {% else %}
-                                                        <a href="{{ sort_link }}">link{{ column_link }}</a>
+                                                        <a href="{{ sort_name }}">name{{ column_name }}</a>
                                                     {% endif %}
                                                 </td>
 
@@ -193,15 +147,6 @@
                                                            class="{{ order|lower }}">{{ column_category1c }}</a>
                                                     {% else %}
                                                         <a href="{{ sort_category1c }}">category1c{{ column_category1c }}</a>
-                                                    {% endif %}
-                                                </td>
-
-                                                <td class="text-center">
-                                                    {% if sort == 'is_group' %}
-                                                        <a href="{{ sort_is_group }}"
-                                                           class="{{ order|lower }}">column_is_group {{ column_is_group }}</a>
-                                                    {% else %}
-                                                        <a href="{{ sort_is_group }}">is_group {{ column_is_group }}</a>
                                                     {% endif %}
                                                 </td>
 
@@ -218,29 +163,36 @@
                                             </tr>
                                             </thead>
                                             <tbody>
-                                            {% if (links) %}
-                                                {% for link in links %}
-                                                    <tr class="{{ link['class'] }}">
+                                            {% if (products) %}
+                                                {% for product in products %}
+                                                    <tr class="{{ product['class'] }}">
                                                         <td class="text-center">
-                                                            {% if link.id in selected %}
+                                                            {% if product.id in selected %}
                                                                 <input type="checkbox" name="selected[]"
-                                                                       value="{{ link.id }}" checked="checked"/>
+                                                                       value="{{ product.id }}" checked="checked"/>
                                                             {% else %}
                                                                 <input type="checkbox" name="selected[]"
-                                                                       value="{{ link.id }}"/>
+                                                                       value="{{ product.id }}"/>
                                                             {% endif %}
                                                         </td>
-                                                        <td class="text-right">{{ link.id }}</td>
-                                                        <td class="text-left">{{ link.category_list }}</td>
+                                                        <td class="text-right">{{ product.sku }}</td>
+                                                        <td class="text-left">{{ product.category }}</td>
                                                         <td class="text-left">
                                                             <a target="_blank"
-                                                               href="{{ link.link }}">{{ link.link }}</a>
+                                                               href="{{ product.link }}">{{ product.name }}</a>
                                                         </td>
-                                                        <td class="text-left">{{ link.category1c }}</td>
-                                                        <td class="text-left">{{ link.is_group }}</td>
+                                                        <td class="text-left">{{ product.category1c }}</td>
                                                         <td class="text-left"
-                                                            title="{{ link.message }}">{{ link.status }}</td>
-                                                        <td class="text-right">
+                                                            title="{{ product.message }}">{{ product.status }}</td>
+                                                        <td class="text-center">
+                                                            {% if product.status == 'ok' %}
+                                                                <a target="_blank"
+                                                                   href="{{ link_preview }}&id={{ product.id }}"
+                                                                   class="button button"
+                                                                   title="Показать спарсеные данные">
+                                                                    <i class="fa fa-eye" aria-hidden="true"></i>
+                                                                </a>
+                                                            {% endif %}
                                                         </td>
                                                     </tr>
                                                 {% endfor %}
@@ -292,9 +244,9 @@
                                     <hr>
                                     <button id="start_grab" type="button" data-toggle="tooltip" class="btn btn-success"
                                             data-original-title="Старт сканирования"
-                                            title="Заменить ссылки на группы ссылками на все товары из этих групп"
-                                            onclick="startGrab();">
-                                        <i class="fa fa-play" aria-hidden="true"></i> Раскрыть группы
+                                            title="Парсить товары по Собранным ссылкам"
+                                            onclick="startParse();">
+                                        <i class="fa fa-play" aria-hidden="true"></i> Парсить ссылки
                                     </button>
                                 </div>
                             </div>
@@ -330,7 +282,7 @@
     }
 </style>
 <script>
-    function startGrab() {
+    function startParse() {
         $("#progress").show();
         ajaxpars();
     }
@@ -343,8 +295,8 @@
             success: function (answ) {
                 console.log(answ);
                 if (answ.status == 'go') {
-                    $("#info_count").text("Просканированно " + answ.link_product_count + " | В очереди " + answ.link_group_count)
-                    $('.progress-bar').width((1 - answ.link_group_count / (answ.link_product_count + answ.link_group_count)) * 100 + '%');
+                    $("#info_count").text("Просканированно " + answ.link_product_count + " из " + answ.link_count)
+                    $('.progress-bar').width(answ.link_product_count / answ.link_count * 100 + '%');
                     ajaxpars();
                 } else if (answ.status == 'link_end') {
                     $("#msg").text(answ.msg);
