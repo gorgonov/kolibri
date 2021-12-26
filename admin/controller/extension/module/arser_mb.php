@@ -89,7 +89,7 @@ class ControllerExtensionModuleArserMb extends Controller
         $this->load->model('extension/module/arser_link');
         $this->load->model('extension/module/arser_product');
 
-        $this->loadDidom();
+        loadDidom();
 
         $result = $this->getUrl($link['link']);
 
@@ -128,22 +128,6 @@ class ControllerExtensionModuleArserMb extends Controller
 //        }
     }
 
-    private function loadDidom()
-    {
-        $cwd = getcwd();
-        chdir(DIR_SYSTEM . 'library/DiDom');
-        require_once('ClassAttribute.php');
-        require_once('Document.php');
-        require_once('Node.php');
-        require_once('Element.php');
-        require_once('Encoder.php');
-        require_once('Errors.php');
-        require_once('Query.php');
-        require_once('StyleAttribute.php');
-        require_once('Exceptions/InvalidSelectorException.php');
-        chdir($cwd);
-    }
-
     private function getLinkProductColor(DiDom\Document $document): array
     {
         $url = [];
@@ -180,13 +164,16 @@ class ControllerExtensionModuleArserMb extends Controller
         $arProduct = $document->find('.module_element');
         foreach ($arProduct as $item) {
             $doc = $item->toDocument();
-            $size = $this->getSize($doc);
-            $product[] = [
-                'topic' => $this->getTopic($doc),
-                'size' => $size,
-                'img' => $this->getImg($doc),
-                'description' => $this->getDescription($doc, $size),
-            ];
+            $topic = $this->getTopic($doc);
+            if (!empty($topic)) {
+                $size = $this->getSize($doc);
+                $product[] = [
+                    'topic' => $topic,
+                    'size' => $size,
+                    'img' => $this->getImg($doc),
+                    'description' => $this->getDescription($doc, $size),
+                ];
+            }
         }
 
         $ar = [
@@ -230,7 +217,16 @@ class ControllerExtensionModuleArserMb extends Controller
             /** @var DiDom\Element $item */
             $res[] = $item->getAttribute('src');
         }
-        rsort($res);
+
+        // сортировка по авфавиту, но содержащие «shem» ссылки сзади
+        uasort($res, function ($a, $b) {
+            $pos = strripos($a, 'shem');
+            if ($pos !== false) {
+                return 1;
+            } else {
+                return ($a < $b) ? -1 : 1;
+            }
+        });
 
         $res = array_map(function($x){
             return substr($x, 0, 2) == '//' ? 'https:' . $x : $x;
