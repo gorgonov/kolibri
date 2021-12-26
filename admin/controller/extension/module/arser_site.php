@@ -2079,11 +2079,15 @@ class ControllerExtensionModuleArserSite extends Controller
             $product_option = unserialize($row['product_option']);
             $imgs = unserialize($row['images_link']);
 
-            $img = $imgs[0];
+            if (isset($imgs[0])) {
+                $img = $imgs[0];
 
-            if (($imgname = array_search($img, $aImg)) === false) { // не нашел, добавим ссылку на картинку
-                $imgname = $path . $this->genImgName($img, $product_id, 0);
-                $aImg[$imgname] = $img;
+                if (($imgname = array_search($img, $aImg)) === false) { // не нашел, добавим ссылку на картинку
+                    $imgname = $path . $this->genImgName($img, $product_id, 0);
+                    $aImg[$imgname] = $img;
+                }
+            } else {
+                $imgname = '';
             }
 
             try {
