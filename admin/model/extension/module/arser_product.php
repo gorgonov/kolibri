@@ -118,7 +118,7 @@ class ModelExtensionModuleArserProduct extends Model
     public function clearProducts($productIds)
     {
         $idList = implode(',', $productIds);
-        $needColumns = ['barcode', 'weight', 'volume', 'quantity', 'price'];
+        $needColumns = ['barcode', 'weight', 'volume', 'quantity', 'price', 'number_packages'];
         $sqlField = [];
         foreach ($needColumns as $key => $column) {
             $sqlField[] = $column . "=''";
@@ -130,7 +130,7 @@ class ModelExtensionModuleArserProduct extends Model
 
     public function clearProductsBySite($siteId)
     {
-        $needColumns = ['barcode', 'weight', 'volume', 'quantity', 'price'];
+        $needColumns = ['barcode', 'weight', 'volume', 'quantity', 'price', 'number_packages'];
         $sqlField = [];
         foreach ($needColumns as $key => $column) {
             $sqlField[] = $column . "=''";
@@ -218,6 +218,8 @@ class ModelExtensionModuleArserProduct extends Model
 
 
     /**
+     * Загрузка свойств продукта
+     * наименование, штрихкод, вес, объем, количество, цена, ску, кол-во в упаковке
      * @param PHPExcel_IOFactory::reader $reader
      * @param integer $siteId
      * @throws PHPExcel_Exception
@@ -268,9 +270,9 @@ class ModelExtensionModuleArserProduct extends Model
                     $str = filter_var($str, FILTER_SANITIZE_NUMBER_INT);
 //                        $str = preg_replace('!\d+!', '', $str);
                 }
-//                if ($key !== 'name') {
-//                    $sqlField[] = $key . "='" . $str . "'";
-//                }
+                if (!in_array($key, ['name', 'sku'])) {
+                    $sqlField[] = $key . "='" . $str . "'";
+                }
             }
 
             if ($importSetting['id_type'] == 1) {
@@ -278,7 +280,10 @@ class ModelExtensionModuleArserProduct extends Model
             } elseif ($importSetting['id_type'] == 2) {
                 $where = "name='{$sku}'";
             } elseif ($importSetting['id_type'] == 3) {
-                $where = "name like '%{$sku}%'";
+                $sku = str_replace(" ","",$sku);
+                $sku = str_replace(".","",$sku);
+                $sku = str_replace("-","",$sku);
+                $where = "REGEXP_REPLACE(name, '[ .-]','') like '%{$sku}%'"; // выбрасываем все точки и пробелы
             }
 
             // построение запроса
