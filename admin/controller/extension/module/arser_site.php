@@ -1746,44 +1746,44 @@ class ControllerExtensionModuleArserSite extends Controller
      * todo нерабочий метод?
      * @throws Exception
      */
-    public function repair()
-    {
-        $this->load->language('extension/module/arser_site');
-
-        $this->document->setTitle($this->language->get('heading_title'));
-
-        $this->load->model('extension/module/arser_site');
-
-        if ($this->validateRepair()) {
-            $this->model_extension_module_arser_site->repairCategories();
-
-            $this->session->data['success'] = $this->language->get('text_success');
-
-            $url = '';
-
-            if (isset($this->request->get['sort'])) {
-                $url .= ' & sort = ' . $this->request->get['sort'];
-            }
-
-            if (isset($this->request->get['order'])) {
-                $url .= ' & order = ' . $this->request->get['order'];
-            }
-
-            if (isset($this->request->get['page'])) {
-                $url .= ' & page = ' . $this->request->get['page'];
-            }
-
-            $this->response->redirect(
-                $this->url->link(
-                    'extension/module/arser_site',
-                    'user_token=' . $this->session->data['user_token'] . $url,
-                    true
-                )
-            );
-        }
-
-        $this->getList();
-    }
+//    public function repair()
+//    {
+//        $this->load->language('extension/module/arser_site');
+//
+//        $this->document->setTitle($this->language->get('heading_title'));
+//
+//        $this->load->model('extension/module/arser_site');
+//
+//        if ($this->validateRepair()) {
+//            $this->model_extension_module_arser_site->repairCategories();
+//
+//            $this->session->data['success'] = $this->language->get('text_success');
+//
+//            $url = '';
+//
+//            if (isset($this->request->get['sort'])) {
+//                $url .= ' & sort = ' . $this->request->get['sort'];
+//            }
+//
+//            if (isset($this->request->get['order'])) {
+//                $url .= ' & order = ' . $this->request->get['order'];
+//            }
+//
+//            if (isset($this->request->get['page'])) {
+//                $url .= ' & page = ' . $this->request->get['page'];
+//            }
+//
+//            $this->response->redirect(
+//                $this->url->link(
+//                    'extension/module/arser_site',
+//                    'user_token=' . $this->session->data['user_token'] . $url,
+//                    true
+//                )
+//            );
+//        }
+//
+//        $this->getList();
+//    }
 
     protected function validateRepair()
     {
@@ -1798,42 +1798,42 @@ class ControllerExtensionModuleArserSite extends Controller
      * todo нерабочий метод ?
      * @throws Exception
      */
-    public function autocomplete()
-    {
-        $json = [];
-
-        if (isset($this->request->get['filter_name'])) {
-            $this->load->model('catalog / category');
-
-            $filter_data = array(
-                'filter_name' => $this->request->get['filter_name'],
-                'sort' => 'name',
-                'order' => 'ASC',
-                'start' => 0,
-                'limit' => 5
-            );
-
-            $results = $this->model_extension_module_arser_site->getCategories($filter_data);
-
-            foreach ($results as $result) {
-                $json[] = array(
-                    'category_id' => $result['category_id'],
-                    'name' => strip_tags(html_entity_decode($result['name'], ENT_QUOTES, 'UTF - 8'))
-                );
-            }
-        }
-
-        $sort_order = [];
-
-        foreach ($json as $key => $value) {
-            $sort_order[$key] = $value['name'];
-        }
-
-        array_multisort($sort_order, SORT_ASC, $json);
-
-        $this->response->addHeader('Content - Type: application / json');
-        $this->response->setOutput(json_encode($json));
-    }
+//    public function autocomplete()
+//    {
+//        $json = [];
+//
+//        if (isset($this->request->get['filter_name'])) {
+//            $this->load->model('catalog / category');
+//
+//            $filter_data = array(
+//                'filter_name' => $this->request->get['filter_name'],
+//                'sort' => 'name',
+//                'order' => 'ASC',
+//                'start' => 0,
+//                'limit' => 5
+//            );
+//
+//            $results = $this->model_extension_module_arser_site->getCategories($filter_data);
+//
+//            foreach ($results as $result) {
+//                $json[] = array(
+//                    'category_id' => $result['category_id'],
+//                    'name' => strip_tags(html_entity_decode($result['name'], ENT_QUOTES, 'UTF - 8'))
+//                );
+//            }
+//        }
+//
+//        $sort_order = [];
+//
+//        foreach ($json as $key => $value) {
+//            $sort_order[$key] = $value['name'];
+//        }
+//
+//        array_multisort($sort_order, SORT_ASC, $json);
+//
+//        $this->response->addHeader('Content - Type: application / json');
+//        $this->response->setOutput(json_encode($json));
+//    }
 
     public function export1c()
     {
@@ -2136,7 +2136,6 @@ class ControllerExtensionModuleArserSite extends Controller
                     if (($imgname = array_search($img, $aImg)) === false) { // не нашел, добавим ссылку на картинку
                         $imgname = $path . $this->genImgName($img, $product_id, $key);
                         $aImg[$imgname] = $img;
-                    } else {
                     }
 
                     if ($key > 0) {
@@ -2178,7 +2177,7 @@ class ControllerExtensionModuleArserSite extends Controller
                             ->setCellValue('C' . $i['ProductOptionValues'], $item['name'])
                             ->setCellValue('D' . $i['ProductOptionValues'], 999)
                             ->setCellValue('E' . $i['ProductOptionValues'], 'false')
-                            ->setCellValue('F' . $i['ProductOptionValues'], $item['price'])
+                            ->setCellValue('F' . $i['ProductOptionValues'], $item['value'])
                             ->setCellValue('G' . $i['ProductOptionValues'], '+')
                             ->setCellValue('H' . $i['ProductOptionValues'], 0)
                             ->setCellValue('I' . $i['ProductOptionValues'], '+')
@@ -2348,7 +2347,6 @@ class ControllerExtensionModuleArserSite extends Controller
                 if (($imgname = array_search($img, $aImg)) === false) { // не нашел, добавим ссылку на картинку
                     $imgname = $this->genImgName($img, $row['sku'], $key);
                     $aImg[$imgname] = $img;
-                } else {
                 }
 
                 $url = $img;
@@ -2361,14 +2359,14 @@ class ControllerExtensionModuleArserSite extends Controller
                     if (!$img) {
                         $img = @file_get_contents($this->myUrlEncode($url));
                     }
-                    if (!$img) {
+//                    if (!$img) {
 //                        try {
 //                            $cyrUrl = $this->сyrillicUrl($url);
 //                            $img = @file_get_contents($this->сyrillicUrl($cyrUrl));
 //                        } catch (Exception $e) {
 //                            $log->write('Выброшено исключение: ' .  $e->getMessage());
 //                        }
-                    }
+//                    }
                     if ($img) {
                         file_put_contents($path_img, $img);
                         $log->write($row['sku'] . ' ' . $path_img . ' Сохранен ' . $path);

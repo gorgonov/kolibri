@@ -3,7 +3,7 @@
 class ModelExtensionModuleArserLink extends Model
 {
     /**
-     * @param array $data
+     * @param  array  $data
      * @return bool
      */
     public function addLinks(array $data): bool
@@ -34,16 +34,16 @@ class ModelExtensionModuleArserLink extends Model
 
     public function getLink($site_id, array $data)
     {
-        $sql = "SELECT DISTINCT * FROM ar_link WHERE site_id = '" . (int)$site_id . "'";
+        $sql = "SELECT DISTINCT * FROM ar_link WHERE site_id = '".(int)$site_id."'";
 
         if ($data['filter'] != 'all') {
-            $sql .= "AND status='" . $data['filter'] . "'";
+            $sql .= "AND status='".$data['filter']."'";
         }
 
         if (!empty($data['search'])) {
-            $sql .= "AND (id LIKE '%" . $data['search'] . "%'";
-            $sql .= " OR link LIKE '%" . $data['search'] . "%'";
-            $sql .= " OR category1c LIKE '%" . $data['search'] . "%')";
+            $sql .= "AND (id LIKE '%".$data['search']."%'";
+            $sql .= " OR link LIKE '%".$data['search']."%'";
+            $sql .= " OR category1c LIKE '%".$data['search']."%')";
         }
 
         $sort_data = [
@@ -56,7 +56,7 @@ class ModelExtensionModuleArserLink extends Model
         ];
 
         if (isset($data['sort']) && in_array($data['sort'], $sort_data)) {
-            $sql .= " ORDER BY " . $data['sort'];
+            $sql .= " ORDER BY ".$data['sort'];
         } else {
             $sql .= " ORDER BY id";
         }
@@ -76,7 +76,7 @@ class ModelExtensionModuleArserLink extends Model
                 $data['limit'] = 20;
             }
 
-            $sql .= " LIMIT " . (int)$data['start'] . "," . (int)$data['limit'];
+            $sql .= " LIMIT ".(int)$data['start'].",".(int)$data['limit'];
         }
 
         $query = $this->db->query($sql);
@@ -114,7 +114,7 @@ class ModelExtensionModuleArserLink extends Model
             // we use the PHPExcel package from https://github.com/PHPOffice/PHPExcel
             $cwd = getcwd();
             $dir = version_compare(VERSION, '3.0', '>=') ? 'library/export_import' : 'PHPExcel';
-            chdir(DIR_SYSTEM . $dir);
+            chdir(DIR_SYSTEM.$dir);
             require_once('Classes/PHPExcel.php');
             chdir($cwd);
 
@@ -154,26 +154,29 @@ class ModelExtensionModuleArserLink extends Model
                 'errline' => $errline
             );
             if ($this->config->get('config_error_log')) {
-                $this->log->write('PHP ' . get_class($e) . ':  ' . $errstr . ' in ' . $errfile . ' on line ' . $errline);
+                $this->log->write('PHP '.get_class($e).':  '.$errstr.' in '.$errfile.' on line '.$errline);
             }
             return false;
         }
     }
 
     /**
-     * @param PHPExcel_IOFactory::reader $reader
-     * @param integer $siteId
+     * Читаем ссылки из файла
+     * @param  PHPExcel_IOFactory::reader $reader
+     * @param  integer  $siteId
      * @throws PHPExcel_Exception
      */
     protected function uploadLinks(&$reader, $siteId)
     {
-        $data = $reader->getSheetByName('Группы');
-        if (!is_null($data)) {
-            $maxRow = $data->getHighestRow();
-            for ($row = 2; $row < $maxRow + 1; $row++) {
-                $category = $data->getCellByColumnAndRow(0, $row)->getValue();
-                $link = $data->getCellByColumnAndRow(1, $row)->getValue();
-                $category1c = $data->getCellByColumnAndRow(2, $row)->getValue();
+        /** @var PHPExcel_Worksheet $worksheet */
+        $worksheet = $reader->getSheetByName('Группы');
+        if (!is_null($worksheet)) {
+            $maxRow = $worksheet->getHighestRow();
+            $data = $worksheet->rangeToArray('A2:C'.$maxRow, null, false, false, false);
+            foreach ($data as $row) {
+                $category = (string)$row[0];
+                $link = $row[1];
+                $category1c = $row[2];
                 if (!empty($link)) {
                     $sql = "
                     INSERT INTO ar_link SET 
@@ -188,20 +191,20 @@ class ModelExtensionModuleArserLink extends Model
                         $this->db->query($sql);
                     } catch (Exception $exception) {
                         echo 'пропустили неверную ссылку '
-                            . PHP_EOL . $exception->getMessage() . PHP_EOL;
+                            .PHP_EOL.$exception->getMessage().PHP_EOL;
                     }
                 }
             }
         }
 
-        $data = $reader->getSheetByName('Товары');
-        if (!is_null($data)) {
-            $maxRow = $data->getHighestRow();
-            for ($row = 2; $row < $maxRow + 1; $row++) {
-                $category = $data->getCellByColumnAndRow(0, $row)->getValue();
-                $link = $data->getCellByColumnAndRow(1, $row)->getValue();
-                $category1c = $data->getCellByColumnAndRow(2, $row)->getValue();
-
+        $worksheet = $reader->getSheetByName('Товары');
+        if (!is_null($worksheet)) {
+            $maxRow = $worksheet->getHighestRow();
+            $data = $worksheet->rangeToArray('A2:C'.$maxRow, null, false, false, false);
+            foreach ($data as $row) {
+                $category = (string)$row[0];
+                $link = $row[1];
+                $category1c = $row[2];
                 if (!empty($link)) {
                     $sql = "
                     INSERT INTO ar_link SET 
@@ -222,9 +225,9 @@ class ModelExtensionModuleArserLink extends Model
     {
         $sql1 = '';
         if (!empty($search)) {
-            $sql1 .= " AND (id LIKE '%" . $search . "%'";
-            $sql1 .= " OR link LIKE '%" . $search . "%'";
-            $sql1 .= " OR category1c LIKE '%" . $search . "%')";
+            $sql1 .= " AND (id LIKE '%".$search."%'";
+            $sql1 .= " OR link LIKE '%".$search."%'";
+            $sql1 .= " OR category1c LIKE '%".$search."%')";
         }
 
         $sql = "

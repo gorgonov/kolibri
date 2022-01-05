@@ -327,7 +327,7 @@ class ControllerExtensionModuleArserBm extends Controller
             $name = $el->first('div.h2.woocommerce-loop-product__title')->text();
             $price = $this->normalSum($el->first('bdi')->text());
 
-            $aTmp[] = ['name' => $name, 'price' => $price];
+            $aTmp[] = ['name' => $name, 'value' => $price];
         }
 
         return $aTmp;
