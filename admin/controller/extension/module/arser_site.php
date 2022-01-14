@@ -989,15 +989,21 @@ class ControllerExtensionModuleArserSite extends Controller
             true
         );
 
+        $data['sort_category1c'] = $this->url->link(
+            'extension/module/arser_site/grab',
+            'user_token=' . $this->session->data['user_token'] . '&sort=category1c' . $url,
+            true
+        );
+
         $data['sort_is_group'] = $this->url->link(
             'extension/module/arser_site/grab',
             'user_token=' . $this->session->data['user_token'] . '&sort=is_group' . $url,
             true
         );
 
-        $data['sort_category1c'] = $this->url->link(
+        $data['sort_status'] = $this->url->link(
             'extension/module/arser_site/grab',
-            'user_token=' . $this->session->data['user_token'] . '&sort=category1c' . $url,
+            'user_token=' . $this->session->data['user_token'] . '&sort=status' . $url,
             true
         );
 
@@ -1345,41 +1351,6 @@ class ControllerExtensionModuleArserSite extends Controller
 
         $this->getFormGrab();
     }
-
-    /**
-     * установить признак Status='get' для CRON'a (старт парсинга) по этому сайту
-     */
-//    public function setGetstatus()
-//    {
-//        if (isset($this->request->get['id'])) {
-//            $site_id = $this->request->get['id'];
-//        } else {
-//            $this->error['warning'] = 'Не указан id сайта для парсинга.';
-//            return !$this->error;
-//        }
-//
-//        $this->load->model('extension/module/arser_site');
-//        // Вызываем метод "модели" для сохранения настроек
-//        $this->model_extension_module_arser_site->setStatusSite($site_id, 'get');
-//
-//        //        $json = array(
-//        //            'status' => 'ok',
-//        //            'message' => 'Признак get установлен',
-//        //        );
-//        //
-//        //        $this->response->addHeader('Content-Type: application/json');
-//        //        $this->response->setOutput(json_encode($json));
-//        //
-//        //        return;
-//        $this->response->redirect(
-//            $this->url->link(
-//                'extension/module/arser_site',
-//                'user_token=' . $this->session->data['user_token'] . '&type=module',
-//                true
-//            )
-//        );
-//        //        $this->getList();
-//    }
 
     public function import()
     {

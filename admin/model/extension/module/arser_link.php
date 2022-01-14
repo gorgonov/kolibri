@@ -179,7 +179,7 @@ class ModelExtensionModuleArserLink extends Model
                 $category1c = $row[2];
                 if (!empty($link)) {
                     $sql = "
-                    INSERT INTO ar_link SET 
+                    INSERT IGNORE INTO ar_link SET 
                         site_id = {$siteId},
                         link = '{$link}',
                         category_list = '{$category}',
@@ -207,7 +207,7 @@ class ModelExtensionModuleArserLink extends Model
                 $category1c = $row[2];
                 if (!empty($link)) {
                     $sql = "
-                    INSERT INTO ar_link SET 
+                    INSERT IGNORE INTO ar_link SET 
                         site_id = {$siteId},
                         link = '{$link}',
                         category_list = '{$category}',
