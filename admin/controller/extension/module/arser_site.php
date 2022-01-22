@@ -134,24 +134,6 @@ class ControllerExtensionModuleArserSite extends Controller
                     'user_token=' . $this->session->data['user_token'] . '&id=' . $result['id'] . $url,
                     true
                 ),
-                /*
-                'export' => $this->url->link(
-                    'extension/module/arser_site/export',
-                    'user_token=' . $this->session->data['user_token'] . '&id=' . $result['id'] . $url,
-                    true
-                ),
-                'get' => $this->url->link(
-                    'extension/module/arser_site/setGetstatus',
-                    'user_token=' . $this->session->data['user_token'] . '&id=' . $result['id'] . $url,
-                    true
-                ),
-                //                'import' => $this->url->link('extension/module/arser_site/import', 'user_token=' . $this->session->data['user_token'] . '&id=' . $result['id'] . $url, true),
-                'getimage' => $this->url->link(
-                    'extension/module/arser_site/getimage',
-                    'user_token=' . $this->session->data['user_token'] . '&id=' . $result['id'] . $url,
-                    true
-                ),
-                */
                 'delete' => $this->url->link(
                     'extension/module/arser_site/delete',
                     'user_token=' . $this->session->data['user_token'] . '&id=' . $result['id'] . $url,
@@ -209,12 +191,12 @@ class ControllerExtensionModuleArserSite extends Controller
         );
         $data['sort_minid'] = $this->url->link(
             'extension/module/arser_site',
-            'user_token=' . $this->session->data['user_token'] . '&sort=minid' . $url,
+            'user_token=' . $this->session->data['user_token'] . '&sort=min_id' . $url,
             true
         );
-        $data['sort_maxid'] = $this->url->link(
+        $data['sort_productcount'] = $this->url->link(
             'extension/module/arser_site',
-            'user_token=' . $this->session->data['user_token'] . '&sort=maxid' . $url,
+            'user_token=' . $this->session->data['user_token'] . '&sort=productcount' . $url,
             true
         );
         $data['sort_prefix'] = $this->url->link(
