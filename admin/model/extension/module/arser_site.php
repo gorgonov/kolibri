@@ -171,15 +171,17 @@ class ModelExtensionModuleArserSite extends Model
 
 //        $sql .= " GROUP BY p.product_id";
 
-        $sort_data = array(
+        $sort_data = [
             'name',
             'link',
             'modulname',
             'provider',
             'stock',
             'status',
-            'sort_order'
-        );
+            'min_id',
+            'productcount',
+            'sort_order',
+        ];
 
         if (isset($data['sort']) && in_array($data['sort'], $sort_data)) {
             $sql .= " ORDER BY " . $data['sort'];
