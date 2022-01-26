@@ -257,6 +257,7 @@ class ControllerExtensionModuleArserDg extends Controller
     {
         $ar = [];
         $ar['topic'] = $this->getTopic($document);
+        $ar['price'] = $this->getPrice($document);
         $ar['sku'] = $this->getSku($document);
         $ar['description'] = $this->getDescription($document);
         $ar['aImgLink'] = $this->getImg($document);
@@ -356,10 +357,8 @@ class ControllerExtensionModuleArserDg extends Controller
      * @return array
      * @throws \DiDom\Exceptions\InvalidSelectorException
      */
-    private
-    function getDopLinks(
-        ?string $href
-    ): array {
+    private function getDopLinks(?string $href): array
+    {
         $link = [];
         $doc = (new DiDom\Document($href, true));
         $elements = $doc->find('div.kind-image a');
@@ -370,17 +369,20 @@ class ControllerExtensionModuleArserDg extends Controller
         return $link;
     }
 
-    private
-    function getTopic(
-        Document $document
-    ) {
+    private function getTopic(Document $document)
+    {
         return $document->first('h1.product_title::text');
     }
 
-    private
-    function getSku(
-        Document $document
-    ) {
+    private function getPrice(Document $document)
+    {
+        $res = $document->first('.woocommerce-Price-amount::text');
+        $price = preg_replace('/[^0-9]/', '', $res);
+        return $price;
+    }
+
+    private function getSku(Document $document)
+    {
         return $document->first('span.sku::text');
     }
 
@@ -389,10 +391,8 @@ class ControllerExtensionModuleArserDg extends Controller
      * @param $html
      * @return array|string|string[]|null
      */
-    private
-    function removeHtmlComments(
-        $html
-    ) {
+    private function removeHtmlComments($html)
+    {
         $res = $html;
         $startPos = mb_strpos($html, '<!--');
         $endPos = mb_strpos($html, '-->');
@@ -406,7 +406,8 @@ class ControllerExtensionModuleArserDg extends Controller
         return $res;
     }
 
-    private function normalUrl(string $url) {
-        return str_replace('https://тддизаж.рф', self::HOME,$url);
+    private function normalUrl(string $url)
+    {
+        return str_replace('https://тддизаж.рф', self::HOME, $url);
     }
 }

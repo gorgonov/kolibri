@@ -77,14 +77,14 @@ class ModelExtensionModuleArserProduct extends Model
     {
         extract($data);
         $id = $this->getNextId($site_id);
-
         $weight = $weight ?? '';
+        $sku = $sku ?? $id;
+        $price = $price ?? 0;
+
         $images_link = serialize($aImgLink);
         $attr = serialize($attr);
         $product_option = isset($product_option) ? serialize($product_option) : '';
-        if (!isset($sku)) {
-            $sku = $id;
-        }
+
         $sql = "
                 INSERT IGNORE INTO ar_product SET 
                     id = {$id},
@@ -99,6 +99,7 @@ class ModelExtensionModuleArserProduct extends Model
                     category = '{$category}',                               
                     weight = '{$weight}',                               
                     attr = '{$attr}',                               
+                    price = '{$price}',                               
                     `product_option` = '{$product_option}'                               
         ";
 

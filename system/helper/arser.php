@@ -2,7 +2,7 @@
 
 /**
  * Получить массив с размерами товара в мм
- * @param string $str формат 58х24х35 (ДхШхВ) см
+ * @param  string  $str  формат 58х24х35 (ДхШхВ) см
  * @return array массив из значений размерностей ['Длина' => 580, 'Ширина' => 240, ... ]
  */
 function getSize(string $str)
@@ -18,14 +18,14 @@ function getSize(string $str)
     preg_match_all('![ДШВГ]!u', $str, $sizeName);
 
     foreach ($sizeName[0] as $key => $item) {
-        $aTmp[$size[$item]] = $numbers[0][$key] . '0';
+        $aTmp[$size[$item]] = $numbers[0][$key].'0';
     }
 
     return $aTmp;
 }
 
 /**
- * @param array $ar массив в формате ['Длина' => 580, 'Ширина' => 240, ... ], возможно не все размеры
+ * @param  array  $ar  массив в формате ['Длина' => 580, 'Ширина' => 240, ... ], возможно не все размеры
  * @return string строка в формате «Габариты (Ш*В*Г*Д, мм): Ч*Ч*Ч*Ч», в соответствии с массивом.
  */
 function getSizeString(array $ar)
@@ -39,11 +39,11 @@ function getSizeString(array $ar)
     }, array_keys($ar));
 
     $arNew = array_combine($newKeys, $ar);
-    uksort($arNew, function($a, $b) {
+    uksort($arNew, function ($a, $b) {
         return mb_strpos('ШВГД', $a) - mb_strpos('ШВГД', $b);
     });
 
-    $res = 'Габариты (' . implode('*', array_keys($arNew)) . ', мм): ' . implode('*', $arNew);
+    $res = 'Габариты ('.implode('*', array_keys($arNew)).', мм): '.implode('*', $arNew);
 
     return $res;
 }
@@ -62,4 +62,9 @@ function loadDidom()
     require_once('StyleAttribute.php');
     require_once('Exceptions/InvalidSelectorException.php');
     chdir($cwd);
+}
+
+function digit($str): string
+{
+    return preg_replace('/[^0-9]/', '', $str);
 }
