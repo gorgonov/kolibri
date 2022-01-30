@@ -5,7 +5,7 @@
  * @param  string  $str  формат 58х24х35 (ДхШхВ) см
  * @return array массив из значений размерностей ['Длина' => 580, 'Ширина' => 240, ... ]
  */
-function getSize(string $str)
+function getSize(string $str): array
 {
     $aTmp = [];
     $size = [
@@ -28,7 +28,7 @@ function getSize(string $str)
  * @param  array  $ar  массив в формате ['Длина' => 580, 'Ширина' => 240, ... ], возможно не все размеры
  * @return string строка в формате «Габариты (Ш*В*Г*Д, мм): Ч*Ч*Ч*Ч», в соответствии с массивом.
  */
-function getSizeString(array $ar)
+function getSizeString(array $ar): string
 {
     if (count($ar) == 0) {
         return '';
@@ -64,7 +64,52 @@ function loadDidom()
     chdir($cwd);
 }
 
+/**
+ * @param $str - строка, содержащая цифры и текст
+ * @return int - возвращает целое число, состоящее из цифр $sum
+ */
 function digit($str): string
 {
     return preg_replace('/[^0-9]/', '', $str);
+}
+
+/**
+ * удаляет комментарии из html-разметки
+ * @param $html
+ * @return array|string|string[]|null
+ */
+function removeHtmlComments($html)
+{
+    $res = $html;
+    $startPos = mb_strpos($html, '<!--');
+    $endPos = mb_strpos($html, '-->');
+    while ($startPos !== false && $endPos !== false) {
+        $res = mb_substr($res, 0, $startPos - 1).mb_substr($html, $endPos + 3);
+        $startPos = mb_strpos($res, '<!--');
+        $endPos = mb_strpos($res, '-->');
+    }
+
+//        $res = preg_replace('/<!--(.*?)-->/', '', $html);
+    return $res;
+}
+
+/**
+ * удаляет комментарии из html-разметки
+ * @param $html
+ * @return array|string|string[]|null
+ */
+function removeHtmlComments2($html)
+{
+    $res = preg_replace('/<!--(.*?)-->/', '', $html);
+    return $res;
+}
+
+/**
+ * TODO Не пойму, зачем нужен этот метод?
+ * @param  string  $str
+ * @return string
+ */
+function trimScript(string $str): string
+{
+    return preg_split("/<script>/", $str)[0];
 }
