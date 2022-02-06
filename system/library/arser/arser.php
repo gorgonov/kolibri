@@ -1,7 +1,8 @@
 <?php
 
 namespace Arser;
-use DiDom\Document;
+
+use DiDom\Document as Doc;
 
 class Arser extends \Controller
 {
@@ -48,11 +49,32 @@ class Arser extends \Controller
      * раскрываем группы
      * добавим линки на продукты и удалим группу
      * обязательно должен быть перекрыт в дочернем методе
-     * @param array $linkGroup
+     * @param  array  $linkGroup
      */
     protected function parseGroup(array $linkGroup)
     {
-        echo __METHOD__ . ' должен быть перекрыт!';
+        loadDidom();
+        $link = $linkGroup['link'];
+        $document = new Doc($link, true);
+        $linkProducts = $this->getLinkProduct($document); // получим ссылки на продукты
+        $data = [];
+        foreach ($linkProducts as $item) {
+            $data[] = [
+                'site_id' => $linkGroup['site_id'],
+                'category_list' => $linkGroup['category_list'],
+                'link' => $item,
+                'is_group' => 0,
+                'category1c' => $linkGroup['category1c'],
+                'status' => 'new',
+            ];
+        }
+        $this->model_extension_module_arser_link->addLinks($data);
+        $this->model_extension_module_arser_link->deleteLinks([$linkGroup['id']]);
+    }
+
+    protected function getLinkProduct(Doc $document): array
+    {
+        echo __METHOD__.' должен быть перекрыт!';
         die();
     }
 
@@ -85,7 +107,6 @@ class Arser extends \Controller
             'status' => 'go',
         ];
         echo json_encode($json);
-        return;
     }
 
     /**
@@ -107,7 +128,7 @@ class Arser extends \Controller
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_HTTPHEADER => array(
-                'Cookie: ' . random_bytes(59)
+                'Cookie: '.random_bytes(59)
             ),
         ));
 
@@ -123,44 +144,11 @@ class Arser extends \Controller
 
     /**
      * Получаем информацию о продукте
-     * @param array $link
+     * @param  array  $link
      */
     protected function parseProduct(array $link)
     {
-        echo __METHOD__ . ' должен быть перекрыт!';
+        echo __METHOD__.' должен быть перекрыт!';
         die();
-    }
-
-    private function sizeNormal(array $ar): string
-    {
-        $description = $ar['description'];
-        $document = (new DiDom\Document($description));
-        $td_name = $document->first('span.extra_fields_name:contains("Габариты")');
-        $td_value = $td_name->nextSibling('span');
-
-        $el = $document->first('span.extra_fields_name:contains("Габариты")');
-        if ($el) {
-
-            preg_match_all('!\d+!', $el->nextSibling('span')->text(), $numbers);
-            $ar["Ширина"] = $numbers[0][0] ?? 0;
-            $ar["Глубина"] = $numbers[0][1] ?? 0;
-            $ar["Высота"] = $numbers[0][2] ?? 0;
-        }
-
-        $td_name->setInnerHtml('Габариты (Ш*В*Г)');
-        $td_value->setInnerHtml($ar["Ширина"] . '*' . $ar["Высота"] . '*' . $ar["Глубина"]);
-
-        return $document->toElement()->innerHtml();
-    }
-
-    private function imgRemove(string $description): string
-    {
-        $document = (new DiDom\Document($description));
-        $img = $document->first('.jshop_prod_description img');
-        if ($img) {
-            $img->remove();
-        }
-
-        return $document->toElement()->innerHtml();
     }
 }

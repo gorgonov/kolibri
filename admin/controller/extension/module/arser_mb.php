@@ -1,13 +1,19 @@
 <?php
 
-use DiDom\Document;
+use Arser\Arser;
+use DiDom\Document as Doc;
+use Didom\Element;
+use DiDom\Exceptions\InvalidSelectorException;
 
 require_once(DIR_SYSTEM . 'helper/arser.php');
 
-class ControllerExtensionModuleArserMb extends Controller
+class ControllerExtensionModuleArserMb extends Arser
 {
     private const HOME = 'https://mobi-mebel.ru';
 
+    /**
+     * с группами не работаем
+     */
     public function openGroup()
     {
         $json = [
@@ -16,89 +22,21 @@ class ControllerExtensionModuleArserMb extends Controller
             'status' => 'finish',
         ];
         echo json_encode($json);
-        return;
-    }
-
-    /**
-     * Парсим следующий товар (arser_link.status='new'), добавляем его в arser_product
-     * @throws Exception
-     */
-    public function parseNextProduct()
-    {
-        $siteId = $this->request->get['site_id'];
-        $this->load->model('extension/module/arser_link');
-        $productLinks = $this->model_extension_module_arser_link->getNextLink($siteId);
-
-        if (count($productLinks) == 0) { // все товары парсены
-            $json = [
-                'link_count' => count($productLinks),
-                'link_product_count' => count($productLinks),
-                'status' => 'finish',
-            ];
-            echo json_encode($json);
-            return;
-        }
-
-        $this->parseProduct($productLinks[0]);
-        $link_count = $this->model_extension_module_arser_link->getLinkCount($siteId);
-
-        $json = [
-            'link' => $productLinks[0],
-            'link_count' => $link_count['all'],
-            'link_product_count' => ($link_count['ok'] ?? 0) + ($link_count['bad'] ?? 0),
-            'status' => 'go',
-        ];
-        echo json_encode($json);
-        return;
-    }
-
-    private function getUrl($link)
-    {
-        $curl = curl_init();
-
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => $link,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'GET',
-            CURLOPT_HTTPHEADER => array(
-                'Cookie: f261601ce57a4ee01f9efde6727e03e5=srlhf2krg7d51dejkdmkkhcsd1'
-            ),
-        ));
-
-        $response = curl_exec($curl);
-        /* Check for 404 (file not found). */
-        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        if ($httpCode == 404) {
-            $response = 404;
-        }
-        curl_close($curl);
-        return $response;
     }
 
     /**
      * Получаем информацию о продукте
-     * @param array $link
+     * @param  array  $link
+     * @throws InvalidSelectorException
      */
-    private function parseProduct(array $link)
+    protected function parseProduct(array $link)
     {
         $this->load->model('extension/module/arser_link');
         $this->load->model('extension/module/arser_product');
 
         loadDidom();
 
-        $result = $this->getUrl($link['link']);
-
-        if ($result == 404) {
-            $this->model_extension_module_arser_link->setStatus($link['id'], 'bad', 'Страница не существует');
-            return;
-        }
-
-        $document = (new DiDom\Document($result));
+        $document = (new Doc($link['link'], true));
         if (!$document) {
             $this->model_extension_module_arser_link->setStatus($link['id'], 'bad', 'Не удалось прочитать страницу');
             return;
@@ -106,6 +44,10 @@ class ControllerExtensionModuleArserMb extends Controller
 
         // Получаем массив продуктов со страницы
         $products = $this->getProductInfo($document);
+        if (empty($products)) {
+            $this->model_extension_module_arser_link->setStatus($link['id'], 'bad');
+            return;
+        }
 
         $data['link'] = $link['link'];
         $data['site_id'] = $link['site_id'];
@@ -122,43 +64,14 @@ class ControllerExtensionModuleArserMb extends Controller
             }
         }
         $this->model_extension_module_arser_link->setStatus($link['id'], 'ok');
-//        } catch (Exception $e) {
-//            // установить статус у текущей групповой ссылки 'bad'
-//            $this->model_extension_module_arser_link->setStatus($link['id'], 'bad', $e->getMessage() . ' in ' . $e->getLine());
-//        }
-    }
-
-    private function getLinkProductColor(DiDom\Document $document): array
-    {
-        $url = [];
-        $links = $document->find('#list_product_image_thumb img');
-        foreach ($links as $el) {
-            $id = self::normalSum($el->getAttribute('onclick'));
-            $img = $document->first('#main_image_' . $id)->attr('src');
-            $title = $el->getAttribute('title');
-            $url[$id] = ['title' => $title, 'imageLink' => $img];
-        }
-
-        return $url;
-    }
-
-    private function getLinkProduct(DiDom\Document $document): array
-    {
-        $url = [];
-        $links = $document->find('a.list-product-item');
-        foreach ($links as $el) {
-            $url[] = $el->attr('href');
-        }
-
-        return $url;
     }
 
     /**
-     * @param Document $document
+     * @param  Doc  $document
      * @return array
-     * @throws \DiDom\Exceptions\InvalidSelectorException
+     * @throws InvalidSelectorException
      */
-    private function getProductInfo(DiDom\Document $document): array
+    private function getProductInfo(Doc $document): array
     {
         $product = [];
         $arProduct = $document->find('.module_element');
@@ -175,7 +88,6 @@ class ControllerExtensionModuleArserMb extends Controller
                 ];
             }
         }
-
         $ar = [
             'productList' => $product,
             'dopImg' => $this->getDopImg($document),
@@ -186,30 +98,11 @@ class ControllerExtensionModuleArserMb extends Controller
     }
 
     /**
-     * @param string $str
-     * @return string
-     */
-    private function trimScript(string $str): string
-    {
-        return preg_split("/<script>/", $str)[0];
-    }
-
-    /**
-     * @param $sum - строка, содержащая цифры и текст
-     * @return int - возвращает целое число, состоящее из цифр $sum
-     */
-    private static function normalSum($sum)
-    {
-        $result = (int)preg_replace("/[^0-9]/", '', $sum);
-        return $result;
-    }
-
-    /**
-     * @param \DiDom\Element $element
+     * @param  Doc  $doc
      * @return array
-     * @throws \DiDom\Exceptions\InvalidSelectorException
+     * @throws InvalidSelectorException
      */
-    private function getImg(DiDom\Document $doc): array
+    private function getImg(Doc $doc): array
     {
         $res = [];
         $imgList = $doc->find('img');
@@ -235,7 +128,12 @@ class ControllerExtensionModuleArserMb extends Controller
         return $res;
     }
 
-    private function getTopic(DiDom\Document $doc): string
+    /**
+     * @param  Doc  $doc
+     * @return string
+     * @throws InvalidSelectorException
+     */
+    private function getTopic(Doc $doc): string
     {
         $res = '';
         $item = $doc->first('.module_description b');
@@ -246,7 +144,12 @@ class ControllerExtensionModuleArserMb extends Controller
         return $res;
     }
 
-    private function getDopImg(DiDom\Document $document)
+    /**
+     * @param  Doc  $document
+     * @return array
+     * @throws InvalidSelectorException
+     */
+    private function getDopImg(Doc $document): array
     {
         $res = [];
         $items = $document->find('.n2-ss-slider picture img');
@@ -262,7 +165,12 @@ class ControllerExtensionModuleArserMb extends Controller
         return $res;
     }
 
-    private function getSize(DiDom\Document $doc)
+    /**
+     * @param  Doc  $doc
+     * @return array
+     * @throws InvalidSelectorException
+     */
+    private function getSize(Doc $doc): array
     {
         $aTmp = [];
 
@@ -277,7 +185,13 @@ class ControllerExtensionModuleArserMb extends Controller
         return $aTmp;
     }
 
-    private function getDescription(DiDom\Document $doc, array $size): string
+    /**
+     * @param  Doc  $doc
+     * @param  array  $size
+     * @return string
+     * @throws InvalidSelectorException
+     */
+    private function getDescription(Doc $doc, array $size): string
     {
         $res = getSizeString($size);
         $item = $doc->first('.module_description b');
@@ -290,7 +204,12 @@ class ControllerExtensionModuleArserMb extends Controller
         return $res;
     }
 
-    private function getCommonDescription(DiDom\Document $document)
+    /**
+     * @param  Doc  $document
+     * @return string
+     * @throws InvalidSelectorException
+     */
+    private function getCommonDescription(Doc $document): string
     {
         $res = [];
 
@@ -305,6 +224,12 @@ class ControllerExtensionModuleArserMb extends Controller
         return implode('<br>', $res);
     }
 
+    /**
+     * @param  Doc  $document
+     * @param  string  $sectionName
+     * @return string
+     * @throws InvalidSelectorException
+     */
     private function getSection(Didom\Document $document, string $sectionName): string
     {
         $res = [];
@@ -313,7 +238,6 @@ class ControllerExtensionModuleArserMb extends Controller
         if ($el) {
             $res[] = "{$sectionName} ";
             if ($el1 = $el->closest('div.panel-grid')->nextSibling()) {
-//                $res[] = $this->getContent($el1);
                 $items = $el1->toDocument()->find('div.so-panel');
                 foreach ($items as $item) {
                     $res[] = $this->getContent($item);
@@ -328,7 +252,12 @@ class ControllerExtensionModuleArserMb extends Controller
         return implode('<br>', $res);
     }
 
-    private function getContent(Didom\Element $el): string
+    /**
+     * @param  Element  $el
+     * @return string
+     * @throws InvalidSelectorException
+     */
+    private function getContent(Element $el): string
     {
         $aTmp = [];
         $doc = $el->toDocument();
@@ -353,11 +282,11 @@ class ControllerExtensionModuleArserMb extends Controller
     }
 
     /**
-     * @param Document $document
+     * @param  Doc  $document
      * @return string
-     * @throws \DiDom\Exceptions\InvalidSelectorException
+     * @throws InvalidSelectorException
      */
-    private function getVideo(Document $document)
+    private function getVideo(Doc $document): string
     {
         $el = $document->first('#existing-iframe-example');
         if ($el) {

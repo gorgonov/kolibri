@@ -1,154 +1,48 @@
 <?php
 
-use DiDom\Document;
+use Arser\Arser;
+use DiDom\Document as Doc;
+use DiDom\Exceptions\InvalidSelectorException;
 
 require_once(DIR_SYSTEM.'helper/arser.php');
 
-class ControllerExtensionModuleArserBts extends Controller
+class ControllerExtensionModuleArserBts extends Arser
 {
     private const HOME = 'https://mebelony.ru';
 
-    public function openGroup()
-    {
-        $siteId = $this->request->get['site_id'];
-        $this->load->model('extension/module/arser_link');
-        $linksGroup = $this->model_extension_module_arser_link->getGroupLink($siteId, 1);
-
-        if (count($linksGroup) == 0) { // все группы раскрыты
-            $link_product_count = count($this->model_extension_module_arser_link->getGroupLink($siteId, 0));
-            $json = [
-                'link_group_count' => 0,
-                'link_product_count' => $link_product_count,
-                'status' => 'finish',
-            ];
-            echo json_encode($json);
-            return;
-        }
-
-        $this->parseGroup($linksGroup[0]);
-        $link_group_count = count($this->model_extension_module_arser_link->getGroupLink($siteId, 1));
-        $link_product_count = count($this->model_extension_module_arser_link->getGroupLink($siteId, 0));
-
-        $json = [
-            'link_group_count' => $link_group_count,
-            'link_product_count' => $link_product_count,
-            'status' => 'go',
-        ];
-        echo json_encode($json);
-
-        return;
-    }
-
     /**
-     * @param  array  $linkGroup
+     * Получение ссылок на продукты (раскрываем группы)
+     * @param  Doc  $document
+     * @return array
+     * @throws InvalidSelectorException
      */
-    private function parseGroup(array $linkGroup)
+    protected function getLinkProduct(Doc $document): array
     {
-        loadDidom();
-        $link = $linkGroup['link'].'?sort=name'; //показать все товары
-        $document = new DiDom\Document($link, true);
-
-        $linkProducts = $this->getLinkProduct($document); // получим ссылки на продукты
-
-        // добавим линки на продукты и удалим группу
-        $data = [];
-        foreach ($linkProducts as $item) {
-            $data[] = [
-                'site_id' => $linkGroup['site_id'],
-                'category_list' => $linkGroup['category_list'],
-                'link' => $item,
-                'is_group' => 0,
-                'category1c' => $linkGroup['category1c'],
-                'status' => 'new',
-            ];
-            $this->model_extension_module_arser_link->addLinks($data);
+        // соберем ссылки на продукты
+        $url = [];
+        $links = $document->find('a.card__link');
+        foreach ($links as $el) {
+            $url[] = self::HOME.$el->href;
         }
 
-        $this->model_extension_module_arser_link->deleteLinks([$linkGroup['id']]);
-
-        return;
-    }
-
-    /**
-     * Парсим следующий товар (arser_link.status='new'), добавляем его в arser_product
-     * @throws Exception
-     */
-    public function parseNextProduct()
-    {
-        $siteId = $this->request->get['site_id'];
-        $this->load->model('extension/module/arser_link');
-        $productLinks = $this->model_extension_module_arser_link->getNextLink($siteId);
-
-        if (count($productLinks) == 0) { // все товары парсены
-            $json = [
-                'link_count' => count($productLinks),
-                'link_product_count' => count($productLinks),
-                'status' => 'finish',
-            ];
-            echo json_encode($json);
-            return;
-        }
-
-        $this->parseProduct($productLinks[0]);
-        $link_count = $this->model_extension_module_arser_link->getLinkCount($siteId);
-
-        $json = [
-            'link' => $productLinks[0],
-            'link_count' => $link_count['all'],
-            'link_product_count' => ($link_count['ok'] ?? 0) + ($link_count['bad'] ?? 0),
-            'status' => 'go',
-        ];
-        echo json_encode($json);
-        return;
-    }
-
-    private function getUrl($link)
-    {
-        $curl = curl_init();
-
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => $link,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'GET',
-            CURLOPT_HTTPHEADER => array(
-                'Cookie: f261601ce57a4ee01f9efde6727e03e5=srlhf2krg7d51dejkdmkkhcsd1'
-            ),
-        ));
-
-        $response = curl_exec($curl);
-        /* Check for 404 (file not found). */
-        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        if ($httpCode == 404) {
-            $response = 404;
-        }
-        curl_close($curl);
-        return $response;
+        return $url;
     }
 
     /**
      * Получаем информацию о продукте
      * @param  array  $link
+     * @throws InvalidSelectorException
      */
-    private function parseProduct(array $link)
+    protected function parseProduct(array $link)
     {
         $this->load->model('extension/module/arser_link');
         $this->load->model('extension/module/arser_product');
 
         loadDidom();
 
-        $result = $this->getUrl($link['link']);
-
-        if ($result == 404) {
-            $this->model_extension_module_arser_link->setStatus($link['id'], 'bad', 'Страница не существует');
-            return;
-        }
-
-        $document = (new DiDom\Document($result));
+//        $result = $this->getUrl($link['link']);
+        $url = $link['link'];
+        $document = (new Doc($url, true));
         if (!$document) {
             $this->model_extension_module_arser_link->setStatus($link['id'], 'bad', 'Не удалось прочитать страницу');
             return;
@@ -170,30 +64,11 @@ class ControllerExtensionModuleArserBts extends Controller
     }
 
     /**
-     * Получение ссылок на продукты (раскрываем группы)
-     * @param  Document  $document
+     * @param  Doc  $document
      * @return array
-     * @throws \DiDom\Exceptions\InvalidSelectorException
+     * @throws InvalidSelectorException
      */
-    private function getLinkProduct(DiDom\Document $document): array
-    {
-        // соберем ссылки на продукты
-        $url = [];
-        $links = $document->find('a.card__link');
-        foreach ($links as $el) {
-            $url[] = self::HOME.$el->href;
-        }
-
-        return $url;
-    }
-
-
-    /**
-     * @param  Document  $document
-     * @return array
-     * @throws \DiDom\Exceptions\InvalidSelectorException
-     */
-    private function getProductInfo(DiDom\Document $document): array
+    private function getProductInfo(Doc $document): array
     {
         $ar = [];
         $ar['topic'] = $this->getTopic($document);
@@ -206,11 +81,11 @@ class ControllerExtensionModuleArserBts extends Controller
     }
 
     /**
-     * @param  \DiDom\Element  $element
+     * @param  Doc  $document
      * @return array
-     * @throws \DiDom\Exceptions\InvalidSelectorException
+     * @throws InvalidSelectorException
      */
-    private function getImg(DiDom\Document $document): array
+    private function getImg(Doc $document): array
     {
         $res = [];
         $slide = $document->find('div.product__thumbs-wrapper div.product__thumbs-slide');
@@ -223,7 +98,12 @@ class ControllerExtensionModuleArserBts extends Controller
         return $res;
     }
 
-    private function getDescription(DiDom\Document $doc): string
+    /**
+     * @param  Doc  $doc
+     * @return string
+     * @throws InvalidSelectorException
+     */
+    private function getDescription(Doc $doc): string
     {
         $res = '';
         if ($el = $doc->first('div.product__info-item')->html()) {
@@ -232,10 +112,15 @@ class ControllerExtensionModuleArserBts extends Controller
         return $res;
     }
 
-    private function getAttr(string $str)
+    /**
+     * @param  string  $str
+     * @return array
+     * @throws InvalidSelectorException
+     */
+    private function getAttr(string $str): array
     {
         $attrList = [];
-        $doc = new DiDom\Document($str);
+        $doc = new Doc($str);
 
         if ($attr = $this->getAttribute($doc, 'Ширина', true)) {
             $attrList = array_merge($attrList, $attr);
@@ -257,13 +142,13 @@ class ControllerExtensionModuleArserBts extends Controller
     }
 
     /**
-     * @param  Document  $doc
-     * @param $attrName
-     * @param  false  $is_digit
+     * @param  Doc  $doc
+     * @param  string  $attrName
+     * @param  bool  $is_digit
      * @return array|false
-     * @throws \DiDom\Exceptions\InvalidSelectorException
+     * @throws InvalidSelectorException
      */
-    private function getAttribute(DiDom\Document $doc, $attrName, $is_digit = false)
+    private function getAttribute(Doc $doc, string $attrName, bool $is_digit = false)
     {
         $el = $doc->first("div.product__info-props:contains({$attrName})");
         if ($el) {
@@ -278,37 +163,27 @@ class ControllerExtensionModuleArserBts extends Controller
     }
 
     /**
-     * собираем ссылки на разные цвета продукта
-     * @param  string|null  $href
-     * @return array
-     * @throws \DiDom\Exceptions\InvalidSelectorException
+     * @param  Doc  $document
+     * @return string|null
+     * @throws InvalidSelectorException
      */
-    private function getDopLinks(?string $href): array
-    {
-        $link = [];
-        $doc = (new DiDom\Document($href, true));
-        $elements = $doc->find('div.kind-image a');
-        foreach ($elements as $element) {
-            $link[] = self::HOME.$element->href;
-        }
-
-        return $link;
-    }
-
-    private function getTopic(Document $document)
+    private function getTopic(Doc $document): ?string
     {
         $res = $document->first('h1.title::text');
 
         return $res;
     }
 
-    private function getSku(Document $document)
+    /**
+     * @param  Doc  $document
+     * @return string
+     * @throws InvalidSelectorException
+     */
+    private function getSku(Doc $document): string
     {
         $res = $document->first('div.product__id::text');
         $res = preg_replace('/[^0-9]/', '', $res);
 
         return $res;
     }
-
-
 }

@@ -1,6 +1,8 @@
 <?php
 
 use Arser\Arser;
+use DiDom\Document as Doc;
+use DiDom\Exceptions\InvalidSelectorException;
 
 require_once(DIR_SYSTEM.'helper/arser.php');
 
@@ -8,21 +10,17 @@ class ControllerExtensionModuleArserIc extends Arser
 {
     private const HOME = 'https://interior-center.ru';
 
-    public function openGroup()
-    {
-        parent::openGroup();
-    }
-
     /**
      * добавим линки на продукты и удалим группу
      * @param  array  $linkGroup
+     * @throws InvalidSelectorException
      */
     protected function parseGroup(array $linkGroup)
     {
         loadDidom();
         $link = $linkGroup['link']; //показать все товары
 
-        $document = new DiDom\Document($link, true);
+        $document = new Doc($link, true);
         $linkProducts = $this->getLinkProduct($document); // получим ссылки на продукты
         $data = [];
         foreach ($linkProducts as $item) {
@@ -37,17 +35,15 @@ class ControllerExtensionModuleArserIc extends Arser
         }
         $this->model_extension_module_arser_link->addLinks($data);
         $this->model_extension_module_arser_link->deleteLinks([$linkGroup['id']]);
-
-        return;
     }
 
     /**
      * Получение ссылок на продукты (раскрываем группы)
-     * @param  Document  $document
+     * @param  Doc  $document
      * @return array
-     * @throws \DiDom\Exceptions\InvalidSelectorException
+     * @throws InvalidSelectorException
      */
-    private function getLinkProduct(DiDom\Document $document): array
+    protected function getLinkProduct(Doc $document): array
     {
         // соберем ссылки на продукты
         $url = [];
@@ -62,17 +58,9 @@ class ControllerExtensionModuleArserIc extends Arser
     }
 
     /**
-     * Парсим следующий товар (arser_link.status='new'), добавляем его в arser_product
-     * @throws Exception
-     */
-    public function parseNextProduct()
-    {
-        parent::parseNextProduct();
-    }
-
-    /**
      * Получаем информацию о продукте
      * @param  array  $link
+     * @throws InvalidSelectorException
      */
     protected function parseProduct(array $link)
     {
@@ -81,20 +69,7 @@ class ControllerExtensionModuleArserIc extends Arser
 
         loadDidom();
 
-//        $result = $this->getUrl($link['link']);
-//
-//        if ($result == 404) {
-//            $this->model_extension_module_arser_link->setStatus($link['id'], 'bad', 'Страница не существует');
-//            return;
-//        }
-
-//        if ($result>200) {
-//            die('httpError: ' . $result);
-//        }
-
-
-//        $document = (new DiDom\Document($result));
-        $document = (new DiDom\Document($link['link'], true));
+        $document = (new Doc($link['link'], true));
         if (!$document) {
             $this->model_extension_module_arser_link->setStatus($link['id'], 'bad', 'Не удалось прочитать страницу');
             return;
@@ -119,14 +94,14 @@ class ControllerExtensionModuleArserIc extends Arser
     }
 
     /**
-     * @param  Document  $document
+     * @param  Doc  $document
      * @return array
-     * @throws \DiDom\Exceptions\InvalidSelectorException
+     * @throws InvalidSelectorException
      */
-    private function getProductInfo(DiDom\Document $document): array
+    private function getProductInfo(Doc $document): array
     {
         $ar = [];
-        $description = ($el = $document->first('div.preview_text')) ? $el->html() : '';
+        $description = $this->getDescription($document);
         $offers = $this->getOffers($document);
         foreach ($offers as $offer) {
             $attr = [];
@@ -153,30 +128,11 @@ class ControllerExtensionModuleArserIc extends Arser
     }
 
     /**
-     * удаляет комментарии из html-разметки
-     * @param $html
-     * @return array|string|string[]|null
-     */
-    private function removeHtmlComments($html)
-    {
-        $res = $html;
-        $startPos = mb_strpos($html, '<!--');
-        $endPos = mb_strpos($html, '-->');
-        while ($startPos !== false && $endPos !== false) {
-            $res = mb_substr($res, 0, $startPos - 1).mb_substr($html, $endPos + 3);
-            $startPos = mb_strpos($res, '<!--');
-            $endPos = mb_strpos($res, '-->');
-        }
-
-//        $res = preg_replace('/<!--(.*?)-->/', '', $html);
-        return $res;
-    }
-
-    /**
-     * @param $document
+     * @param  Doc  $document
      * @return mixed
+     * @throws InvalidSelectorException
      */
-    private function getOffers($document)
+    private function getOffers(Doc $document)
     {
         $tmp = $document->first('script:contains(JCCatalogElement)')->text();
         $startPos = mb_strpos($tmp, '{');
@@ -188,5 +144,15 @@ class ControllerExtensionModuleArserIc extends Arser
 
         $offers = $json->OFFERS;
         return $offers;
+    }
+
+    /**
+     * @param  Doc  $document
+     * @return string
+     * @throws InvalidSelectorException
+     */
+    private function getDescription(Doc $document): string
+    {
+        return ($el = $document->first('div.preview_text')) ? $el->html() : '';
     }
 }

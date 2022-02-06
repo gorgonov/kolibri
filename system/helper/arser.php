@@ -105,7 +105,22 @@ function removeHtmlComments2($html)
 }
 
 /**
- * TODO Не пойму, зачем нужен этот метод?
+ * удаляет комментарии из html-разметки
+ * @param $html
+ * @return array|string|string[]|null
+ */
+function removeHtmlLink($html)
+{
+    // удаляем открывающие тэги
+    $html = preg_replace('/\<a.*?\>/s', '', $html);
+
+    // удаляем закрывающие тэги
+    $html = preg_replace('/<\/a\>/s', '', $html);
+
+    return $html;
+}
+
+/**
  * @param  string  $str
  * @return string
  */

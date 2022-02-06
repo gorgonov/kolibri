@@ -1,86 +1,31 @@
 <?php
 
-use DiDom\Document;
+use Arser\Arser;
+use DiDom\Document as Doc;
+use DiDom\Exceptions\InvalidSelectorException;
 
-class ControllerExtensionModuleArserBm extends Controller
+require_once(DIR_SYSTEM.'helper/arser.php');
+
+class ControllerExtensionModuleArserBm extends Arser
 {
-    private $error = array();
-
-    public function openGroup()
-    {
-        $siteId = $this->request->get['site_id'];
-        $this->load->model('extension/module/arser_link');
-        $linksGroup = $this->model_extension_module_arser_link->getGroupLink($siteId, 1);
-
-        if (count($linksGroup) == 0) { // все группы раскрыты
-            $link_product_count = count($this->model_extension_module_arser_link->getGroupLink($siteId, 0));
-            $json = [
-                'link_group_count' => 0,
-                'link_product_count' => $link_product_count,
-                'status' => 'finish',
-            ];
-            echo json_encode($json);
-            return;
-        }
-
-        $this->parseGroup($linksGroup[0]);
-        $link_group_count = count($this->model_extension_module_arser_link->getGroupLink($siteId, 1));
-        $link_product_count = count($this->model_extension_module_arser_link->getGroupLink($siteId, 0));
-
-        $json = [
-            'link_group_count' => $link_group_count,
-            'link_product_count' => $link_product_count,
-            'status' => 'go',
-        ];
-        echo json_encode($json);
-        return;
-    }
-
-    public function parseNextProduct()
-    {
-        $siteId = $this->request->get['site_id'];
-        $this->load->model('extension/module/arser_link');
-        $productLinks = $this->model_extension_module_arser_link->getNextLink($siteId);
-
-        if (count($productLinks) == 0) { // все товары парсены
-            $json = [
-                'link_count' => count($productLinks),
-                'link_product_count' => count($productLinks),
-                'status' => 'finish',
-            ];
-            echo json_encode($json);
-            return;
-        }
-
-        $this->parseProduct($productLinks[0]);
-        $link_count = $this->model_extension_module_arser_link->getLinkCount($siteId);
-
-        $json = [
-            'link_parse' => $productLinks[0],
-            'link_count' => $link_count['all'],
-            'link_product_count' => ($link_count['ok'] ?? 0) + ($link_count['bad'] ?? 0),
-            'status' => 'go',
-        ];
-        echo json_encode($json);
-        return;
-    }
+    private const HOME = 'https://belmarco.ru';
 
     /**
      * @param array $linkGroup
      */
-    private function parseGroup(array $linkGroup)
+    protected function parseGroup(array $linkGroup)
     {
         try {
-            $this->loadDidom();
+            loadDidom();
             // 1 страница
-            $document = new DiDom\Document($linkGroup['link'], true);
+            $document = new Doc($linkGroup['link'], true);
             $linkProduct = $this->getLinkProduct($document);
 
             // другие страницы
             $links = $document->find('a.page.larger');
             foreach ($links as $el) {
                 $url = $el->attr('href');
-                $document = new DiDom\Document($url, true);
+                $document = new Doc($url, true);
                 $linkProduct = array_merge($linkProduct, $this->getLinkProduct($document));
             }
         } catch (Exception $e) {
@@ -104,63 +49,14 @@ class ControllerExtensionModuleArserBm extends Controller
         }
         $this->model_extension_module_arser_link->addLinks($data);
         $this->model_extension_module_arser_link->deleteLinks([$linkGroup['id']]);
-
-        return;
-    }
-
-    private function parseProduct(array $link)
-    {
-        try {
-//            error_reporting(0);
-            $this->loadDidom();
-            $document = @(new DiDom\Document($link['link'], true));
-            if (!$document) {
-                $this->model_extension_module_arser_link->setStatus($link['id'], 'bad',
-                    'Не удалось прочитать страницу');
-                return;
-            }
-
-            $data = $this->getProductInfo($document);
-            $data['link'] = $link['link'];
-            $data['site_id'] = $link['site_id'];
-            $data['category'] = $link['category_list'];
-            $data['category1c'] = $link['category1c'];
-
-            $this->load->model('extension/module/arser_product');
-            $this->model_extension_module_arser_product->addProduct($data);
-            $this->load->model('extension/module/arser_link');
-            $this->model_extension_module_arser_link->setStatus($link['id'], 'ok');
-        } catch (Exception $e) {
-            // установить статус у текущей групповой ссылки 'bad'
-            $this->model_extension_module_arser_link->setStatus($link['id'], 'bad', $e->getMessage());
-            return;
-        }
-
-        return;
-    }
-
-    private function loadDidom()
-    {
-        $cwd = getcwd();
-        chdir(DIR_SYSTEM . 'library/DiDom');
-        require_once('ClassAttribute.php');
-        require_once('Document.php');
-        require_once('Node.php');
-        require_once('Element.php');
-        require_once('Encoder.php');
-        require_once('Errors.php');
-        require_once('Query.php');
-        require_once('StyleAttribute.php');
-        require_once('Exceptions/InvalidSelectorException.php');
-        chdir($cwd);
     }
 
     /**
-     * @param \DiDom\Document $document
+     * @param  Doc  $document
      * @return array
-     * @throws \DiDom\Exceptions\InvalidSelectorException
+     * @throws InvalidSelectorException
      */
-    private function getLinkProduct(DiDom\Document $document): array
+    protected function getLinkProduct(Doc $document): array
     {
         $url = [];
         $links = $document->find('a.woocommerce-LoopProduct-link.woocommerce-loop-product__link');
@@ -169,6 +65,37 @@ class ControllerExtensionModuleArserBm extends Controller
         }
 
         return $url;
+    }
+
+    /**
+     * Получаем информацию о продукте
+     * @param  array  $link
+     * @throws InvalidSelectorException
+     */
+    protected function parseProduct(array $link)
+    {
+        loadDidom();
+        $document = (new Doc($link['link'], true));
+        if (!$document) {
+            $this->model_extension_module_arser_link->setStatus($link['id'], 'bad', 'Не удалось прочитать страницу');
+            return;
+        }
+
+        $data = $this->getProductInfo($document);
+        if (empty($data)) {
+            $this->model_extension_module_arser_link->setStatus($link['id'], 'bad');
+            return;
+        }
+
+        $data['link'] = $link['link'];
+        $data['site_id'] = $link['site_id'];
+        $data['category'] = $link['category_list'];
+        $data['category1c'] = $link['category1c'];
+
+        $this->load->model('extension/module/arser_product');
+        $this->model_extension_module_arser_product->addProduct($data);
+        $this->load->model('extension/module/arser_link');
+        $this->model_extension_module_arser_link->setStatus($link['id'], 'ok');
     }
 
     /**
@@ -215,45 +142,23 @@ class ControllerExtensionModuleArserBm extends Controller
     }
 
     /**
-     * @param Document $document
+     * @param  Doc  $document
      * @return array
-     * @throws \DiDom\Exceptions\InvalidSelectorException
+     * @throws InvalidSelectorException
      */
-    private function getProductInfo(DiDom\Document $document): array
+    private function getProductInfo(Doc $document): array
     {
         $ar = [];
         $tmp = trim($document->first('h1.product_title')->text()); // Заголовок товара c артикулом
         $arTmp = preg_split("/[()]+/", $tmp);
         $ar["topic"] = $arTmp[0]; // Заголовок товара
         $ar["sku"] = (int)$arTmp[1]; // Артикул
-        // картинки
-        $aImgLink = [];
-        $arTmp = $document->find('#owl-products-images img');
-        foreach ($arTmp as $el) {
-            $aImgLink[] = $el->attr('data-large_image'); // оч. большие картинки
-//            $aImgLink[] = $el->attr('data-medium');
-        }
-        $ar["aImgLink"] = $aImgLink;
-
-        $product_id = $document->first('#wcull-content')->attr('data-product_id');
-        $ar['description'] = '';
-        $tmp = $this->getTab($product_id, 'tab-characteristics');
-        if ($tmp) {
-            $ar['attr'] = $this->getAttributes($tmp);
-            $ar['description'] .= $this->trimScript($tmp);
-        }
-
-        $tmp = $this->getTab($product_id, 'tab-description');
-        if ($tmp) {
-            $ar['description'] .= $this->trimScript($tmp);
-        }
-
-        $tmp = $document->first('a.video');
-        if ($tmp) {
-            $ar['description'] .= '<iframe frameborder="0" src="' . $tmp->attr('href') . '" width="640" height="360" class="note-video-clip"></iframe>';
-        }
+        $ar["aImgLink"] = $this->getImg($document);
+        $ar['description'] = $this->getDescription($document);
+        $ar['attr'] = $this->getAttributes($document); // todo
 
         // опции
+        $product_id = $this->getProductId($document);
         $tmp = $this->getTab($product_id, 'tab-accessories');
         $ar['product_option'] = $this->getOptions($tmp);
 
@@ -270,20 +175,27 @@ class ControllerExtensionModuleArserBm extends Controller
     }
 
     /**
-     * @param string $tmp
+     * @param  Doc  $document
      * @return array
-     * @throws \DiDom\Exceptions\InvalidSelectorException
+     * @throws InvalidSelectorException
      */
-    private function getAttributes(string $tmp): array
+    private function getAttributes(Doc $document): array
     {
-        $doc = (new DiDom\Document($tmp));
+        $product_id = $this->getProductId($document);
+        $tmp = $this->getTab($product_id, 'tab-characteristics');
+
+        if (!$tmp) {
+            return [];
+        }
+
+        $doc = (new Doc($tmp));
         $aTmp = [];
 
         $el = $doc->first('div:contains("Размер")');
 
         if ($el) {
             $str = $el->nextSibling('div')->text();
-            $aTmp = $this->getSize($str);
+            $aTmp = getSize($str);
         }
 
         $el = $doc->first('div:contains("Размер спального места:")');
@@ -318,14 +230,14 @@ class ControllerExtensionModuleArserBm extends Controller
             return [];
         }
 
-        $doc = (new DiDom\Document($tmp));
+        $doc = (new Doc($tmp));
         $aTmp = [];
 
         $aDop = $doc->find('li.type-product');
         foreach ($aDop as $dop) {
             $el = $dop->toDocument();
             $name = $el->first('div.h2.woocommerce-loop-product__title')->text();
-            $price = $this->normalSum($el->first('bdi')->text());
+            $price = digit($el->first('bdi')->text());
 
             $aTmp[] = ['name' => $name, 'value' => $price];
         }
@@ -334,31 +246,48 @@ class ControllerExtensionModuleArserBm extends Controller
     }
 
     /**
-     * @param $sum - строка, содержащая цифры и текст
-     * @return int - возвращает целое число, состоящее из цифр $sum
+     * @param $document
+     * @return array
      */
-    private function normalSum($sum)
+    private function getImg($document): array
     {
-        $result = (int)preg_replace("/[^0-9]/", '', $sum);
-        return $result;
+        $res = [];
+        $arTmp = $document->find('#owl-products-images img');
+        foreach ($arTmp as $el) {
+            $res[] = $el->attr('data-large_image'); // оч. большие картинки
+//            $res[] = $el->attr('data-medium');
+        }
+        return $res;
     }
 
-    private function getSize(string $str)
+    /**
+     * @param $document
+     * @return string
+     */
+    private function getDescription($document): string
     {
-        $aTmp = [];
-        $size = [
-            'Д' => 'Длина',
-            'Ш' => 'Ширина',
-            'Г' => 'Глубина',
-            'В' => 'Высота',
-        ];
-        preg_match_all('!\d+!', $str, $numbers);
-        preg_match_all('![ДШВГ]!u', $str, $sizeName);
+        $description = '';
+        $product_id = $this->getProductId($document);
 
-        foreach ($sizeName[0] as $key => $item) {
-            $aTmp[$size[$item]] = $numbers[0][$key] . '0';
+        if ($tmp = $this->getTab($product_id, 'tab-characteristics')) {
+            $description .= $this->trimScript($tmp);
+        }
+        if ($tmp = $this->getTab($product_id, 'tab-description')) {
+            $description .= $this->trimScript($tmp);
+        }
+        if ($tmp = $document->first('a.video')) {
+            $description .= '<iframe frameborder="0" src="'.$tmp->attr('href').'" width="640" height="360" class="note-video-clip"></iframe>';
         }
 
-        return $aTmp;
+        return $description;
+    }
+
+    /**
+     * @param $document
+     * @return mixed
+     */
+    private function getProductId($document)
+    {
+        return $document->first('#wcull-content')->attr('data-product_id');
     }
 }
