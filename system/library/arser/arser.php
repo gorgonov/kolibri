@@ -48,7 +48,6 @@ class Arser extends \Controller
     /**
      * раскрываем группы
      * добавим линки на продукты и удалим группу
-     * обязательно должен быть перекрыт в дочернем методе
      * @param  array  $linkGroup
      */
     protected function parseGroup(array $linkGroup)

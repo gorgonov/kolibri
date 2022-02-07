@@ -1,53 +1,24 @@
 <?php
 
-use DiDom\Document;
+use Arser\Arser;
+use DiDom\Document as Doc;
+use DiDom\Exceptions\InvalidSelectorException;
 
 require_once(DIR_SYSTEM.'helper/arser.php');
 
-class ControllerExtensionModuleArserPz extends Controller
+class ControllerExtensionModuleArserPz extends Arser
 {
     private const HOME = 'https://pazitif.com';
 
-    public function openGroup()
-    {
-        $siteId = $this->request->get['site_id'];
-        $this->load->model('extension/module/arser_link');
-        $linksGroup = $this->model_extension_module_arser_link->getGroupLink($siteId, 1);
-
-        if (count($linksGroup) == 0) { // все группы раскрыты
-            $link_product_count = count($this->model_extension_module_arser_link->getGroupLink($siteId, 0));
-            $json = [
-                'link_group_count' => 0,
-                'link_product_count' => $link_product_count,
-                'status' => 'finish',
-            ];
-            echo json_encode($json);
-            return;
-        }
-
-        $this->parseGroup($linksGroup[0]);
-        $link_group_count = count($this->model_extension_module_arser_link->getGroupLink($siteId, 1));
-        $link_product_count = count($this->model_extension_module_arser_link->getGroupLink($siteId, 0));
-
-        $json = [
-            'link_group_count' => $link_group_count,
-            'link_product_count' => $link_product_count,
-            'status' => 'go',
-        ];
-        echo json_encode($json);
-
-        return;
-    }
-
     /**
      * @param  array  $linkGroup
+     * @throws InvalidSelectorException
      */
-    private function parseGroup(array $linkGroup)
+    protected function parseGroup(array $linkGroup)
     {
-//        try {
         loadDidom();
         $link = $linkGroup['link'] . '?SHOWALL_5=1';
-        $document = new DiDom\Document($link, true);
+        $document = new Doc($link, true);
 
         $linkProducts = $this->getLinkProduct($document); // получим ссылки на продукты (отличаются цветом)
 
@@ -64,92 +35,55 @@ class ControllerExtensionModuleArserPz extends Controller
             ];
             $this->model_extension_module_arser_link->addLinks($data);
         }
-
         $this->model_extension_module_arser_link->deleteLinks([$linkGroup['id']]);
-
-        return;
     }
 
     /**
-     * Парсим следующий товар (arser_link.status='new'), добавляем его в arser_product
-     * @throws Exception
+     * Получение ссылок на продукты (раскрываем группы)
+     * @param  Doc  $document
+     * @return array
+     * @throws InvalidSelectorException
      */
-    public function parseNextProduct()
+    protected function getLinkProduct(Doc $document): array
     {
-        $siteId = $this->request->get['site_id'];
-        $this->load->model('extension/module/arser_link');
-        $productLinks = $this->model_extension_module_arser_link->getNextLink($siteId);
-
-        if (count($productLinks) == 0) { // все товары парсены
-            $json = [
-                'link_count' => count($productLinks),
-                'link_product_count' => count($productLinks),
-                'status' => 'finish',
-            ];
-            echo json_encode($json);
-            return;
+        // соберем ссылки на продукты
+        $url = [];
+        $links = $document->find('div.productColText a.name');
+        foreach ($links as $el) {
+            $url[] = self::HOME.$el->attr('href');
         }
+        $url = array_unique($url);
 
-        $this->parseProduct($productLinks[0]);
-        $link_count = $this->model_extension_module_arser_link->getLinkCount($siteId);
-
-        $json = [
-            'link' => $productLinks[0],
-            'link_count' => $link_count['all'],
-            'link_product_count' => ($link_count['ok'] ?? 0) + ($link_count['bad'] ?? 0),
-            'status' => 'go',
-        ];
-        echo json_encode($json);
-        return;
-    }
-
-    private function getUrl($link)
-    {
-        $curl = curl_init();
-
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => $link,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'GET',
-            CURLOPT_HTTPHEADER => array(
-                'Cookie: f261601ce57a4ee01f9efde6727e03e5=srlhf2krg7d51dejkdmkkhcsd1'
-            ),
-        ));
-
-        $response = curl_exec($curl);
-        /* Check for 404 (file not found). */
-        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        if ($httpCode == 404) {
-            $response = 404;
+        // получим ссылки на размер продукта
+        $sizeLink = [];
+        foreach ($url as $item) {
+            $links = $this->getSizeLinks($item);
+            $sizeLink = array_merge($sizeLink, $links);
         }
-        curl_close($curl);
-        return $response;
+        // получим ссылки на цвет продукта
+        $colorLink = [];
+        foreach ($sizeLink as $item) {
+            $link = $this->getColorLinks($item);
+            $colorLink = array_merge($colorLink, $link);
+        }
+        $colorLink = array_unique($colorLink);
+
+        return $colorLink;
     }
 
     /**
      * Получаем информацию о продукте
      * @param  array  $link
+     * @throws InvalidSelectorException
      */
-    private function parseProduct(array $link)
+    protected function parseProduct(array $link)
     {
         $this->load->model('extension/module/arser_link');
         $this->load->model('extension/module/arser_product');
 
         loadDidom();
-
-        $result = $this->getUrl($link['link']);
-
-        if ($result == 404) {
-            $this->model_extension_module_arser_link->setStatus($link['id'], 'bad', 'Страница не существует');
-            return;
-        }
-
-        $document = (new DiDom\Document($result));
+        $url = $link['link'];
+        $document = (new Doc($url, true));
         if (!$document) {
             $this->model_extension_module_arser_link->setStatus($link['id'], 'bad', 'Не удалось прочитать страницу');
             return;
@@ -170,60 +104,31 @@ class ControllerExtensionModuleArserPz extends Controller
         $this->model_extension_module_arser_link->setStatus($link['id'], 'ok');
     }
 
-    /**
-     * Получение ссылок на продукты (раскрываем группы)
-     * @param  Document  $document
-     * @return array
-     * @throws \DiDom\Exceptions\InvalidSelectorException
-     */
-    private function getLinkProduct(DiDom\Document $document): array
-    {
-        // соберем ссылки на продукты
-        $url = [];
-        $links = $document->find('div.productColText a.name');
-        foreach ($links as $el) {
-            $url[] = self::HOME.$el->attr('href');
-        }
-
-        $url = array_unique($url);
-
-        // получим ссылки на размер продукта
-        $sizeLink = [];
-        foreach ($url as $item) {
-            $links = $this->getSizeLinks($item);
-            $sizeLink = array_merge($sizeLink, $links);
-        }
-
-
-        // получим ссылки на цвет продукта
-        $colorLink = [];
-        foreach ($sizeLink as $item) {
-            $link = $this->getColorLinks($item);
-            $colorLink = array_merge($colorLink, $link);
-        }
-
-        $colorLink = array_unique($colorLink);
-
-        return $colorLink;
-    }
-
 
     /**
-     * @param  Document  $document
+     * @param  Doc  $document
      * @return array
-     * @throws \DiDom\Exceptions\InvalidSelectorException
+     * @throws InvalidSelectorException
      */
-    private function getProductInfo(DiDom\Document $document): array
+    private function getProductInfo(Doc $document): array
     {
         $ar = [];
-        $ar['topic'] = $document->first('h1.changeName')->text();
-        $el = $document->first('li.elementSkuPropertyValue.selected');
-        if ($el) {
-            $ar['topic'] = $document->first('h1.changeName')->text();
-        }
+        $ar['topic'] = $this->getTopic($document);
+        $ar['sku'] = $this->getSku($document);
+        $ar['aImgLink'] = $this->getImg($document);
+        $ar['description'] = $this->getDescription($document);
+        $ar['attr'] = $this->getAttr($ar['description']);
 
-        $ar['sku'] = $document->first('span.changeArticle::text');
+        return $ar;
+    }
 
+    /**
+     * @param  Doc  $document
+     * @return array|string[]
+     * @throws InvalidSelectorException
+     */
+    private function getImg(Doc $document): array
+    {
         $img = [];
         $elements = $document->find('div.slideBox a');
         foreach ($elements as $element) {
@@ -235,34 +140,18 @@ class ControllerExtensionModuleArserPz extends Controller
                 $img = [self::HOME . $el->href];
             }
         }
-
-        $ar['aImgLink'] = $img;
-        $ar['description'] = $this->getDescription($document);
-        $ar['attr'] = $this->getAttr($ar['description']);
-
-        return $ar;
+        return $img;
     }
 
     /**
-     * @param  \DiDom\Element  $element
-     * @return array
-     * @throws \DiDom\Exceptions\InvalidSelectorException
+     * @param  Doc  $doc
+     * @return string
+     * @throws InvalidSelectorException
      */
-    private function getImg(DiDom\Document $document): array
-    {
-        $res = [];
-        $elementList = $document->find('.gallery-preview_list a');
-        foreach ($elementList as $element) {
-            $res[] = $element->attr('href');
-        }
-
-        return $res;
-    }
-
-    private function getDescription(DiDom\Document $doc): string
+    private function getDescription(Doc $doc): string
     {
         if ($el = $doc->first('div.detailPropertiesTable')) {
-            // todo надо удалить строчки из документа
+            // надо удалить строчки из документа
             $el->firstInDocument('span:contains("Производитель")')->closest('tr')->remove();
             $tr = $el->firstInDocument('span:contains("Для детей")');
             if ($tr) {
@@ -270,15 +159,20 @@ class ControllerExtensionModuleArserPz extends Controller
             }
 
             return $el->html();
-        } else {
-            return '';
         }
+
+        return '';
     }
 
-    private function getAttr(string $str)
+    /**
+     * @param  string  $str
+     * @return array
+     * @throws InvalidSelectorException
+     */
+    private function getAttr(string $str): array
     {
         $attrList = [];
-        $doc = new DiDom\Document($str);
+        $doc = new Doc($str);
 
         if ($attr = $this->getAttribute($doc, 'Высота')) {
             $attrList = array_merge($attrList, $attr);
@@ -309,12 +203,12 @@ class ControllerExtensionModuleArserPz extends Controller
     }
 
     /**
-     * @param  Document  $doc
+     * @param  Doc  $doc
      * @param $attrName
      * @return array|false
-     * @throws \DiDom\Exceptions\InvalidSelectorException
+     * @throws InvalidSelectorException
      */
-    private function getAttribute(DiDom\Document $doc, $attrName)
+    private function getAttribute(Doc $doc, $attrName)
     {
         $el = $doc->first("td span:contains({$attrName})");
         if ($el) {
@@ -328,12 +222,12 @@ class ControllerExtensionModuleArserPz extends Controller
      * собираем ссылки на разные цвета продукта
      * @param  string|null  $href
      * @return array
-     * @throws \DiDom\Exceptions\InvalidSelectorException
+     * @throws InvalidSelectorException
      */
     private function getColorLinks(?string $href): array
     {
         $link = [];
-        $doc = (new DiDom\Document($href, true));
+        $doc = (new Doc($href, true));
         $elements = $doc->find('li.elementSkuPropertyValue[data-name="SKU_COLOR"] a');
         foreach ($elements as $element) {
             $link[] = self::HOME . $element->href;
@@ -342,15 +236,46 @@ class ControllerExtensionModuleArserPz extends Controller
         return $link;
     }
 
+    /**
+     * @param  string|null  $href
+     * @return array
+     * @throws InvalidSelectorException
+     */
     private function getSizeLinks(?string $href): array
     {
         $link = [];
-        $doc = (new DiDom\Document($href, true));
+        $doc = (new Doc($href, true));
         $elements = $doc->find('li.elementSkuPropertyValue[data-name="SIZE"] a');
         foreach ($elements as $element) {
             $link[] = self::HOME . $element->href;
         }
 
         return $link;
+    }
+
+    /**
+     * @param  Doc  $document
+     * @return string
+     * @throws InvalidSelectorException
+     */
+    private function getTopic(Doc $document): string
+    {
+        $res = $document->first('h1.changeName')->text();
+        $el = $document->first('li.elementSkuPropertyValue.selected');
+        if ($el) {
+            $res = $document->first('h1.changeName')->text();
+        }
+
+        return $res;
+    }
+
+    /**
+     * @param  Doc  $document
+     * @return string
+     * @throws InvalidSelectorException
+     */
+    private function getSku(Doc $document): string
+    {
+        return $document->first('span.changeArticle::text');
     }
 }

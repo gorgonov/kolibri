@@ -44,8 +44,10 @@ class ControllerExtensionModuleArserOl extends Arser
         $this->load->model('extension/module/arser_product');
 
         loadDidom();
-        $document = (new Doc($link['link'], true));
+        $url = $link['link'];
+        $document = (new Doc($url, true));
         if (!$document) {
+            $this->model_extension_module_arser_link->setStatus($link['id'], 'bad', 'Не удалось прочитать страницу');
             return;
         }
 
