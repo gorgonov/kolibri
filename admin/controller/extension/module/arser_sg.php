@@ -242,7 +242,7 @@ class ControllerExtensionModuleArserSg extends Arser
         if ($tmp) {
             $res .= $tmp->html();
         }
-        $res = urlencode($res);
+//        $res = urlencode($res);
 
         return $res;
     }
