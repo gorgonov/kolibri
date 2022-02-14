@@ -33,7 +33,11 @@ class ControllerExtensionModuleArserSv extends Arser
         $url = [];
         $links = $document->find('div.proposal-item__info.proposal-item__info_catalog a');
         foreach ($links as $el) {
-            $url[] = $el->href;
+            if (substr($el->href,0,4) !== 'http') {
+                $url[] = self::HOME . $el->href;
+            } else {
+                $url[] = $el->href;
+            }
         }
 
         $url = array_unique($url);
@@ -216,7 +220,10 @@ class ControllerExtensionModuleArserSv extends Arser
      */
     private function getOffers(Doc $document)
     {
-        $tmp = $document->first('script:contains(JCCatalogElement)')->text();
+        $tmp = $document->first('script:contains(JCCatalogElement)::text');
+        if (empty($tmp)) {
+            return [];
+        }
         $startPos = mb_strpos($tmp, "{'CONFIG'");
         $endPos = mb_strrpos($tmp, '}');
         $tmp = mb_substr($tmp, $startPos, $endPos - $startPos + 1);
