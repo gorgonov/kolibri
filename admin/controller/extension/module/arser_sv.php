@@ -95,7 +95,7 @@ class ControllerExtensionModuleArserSv extends Arser
         foreach ($offers as $offer) {
             $img = [];
             foreach ($offer->SLIDER as $item) {
-                $img[] = self::HOME.$item->SRC;
+                $img[] = self::HOME.html_entity_decode($item->SRC);
             }
 
             $description = html_entity_decode($offer->DISPLAY_PROPERTIES);

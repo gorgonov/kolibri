@@ -2322,7 +2322,7 @@ class ControllerExtensionModuleArserSite extends Controller
 //                    }
                     if ($img) {
                         file_put_contents($path_img, $img);
-                        $log->write($row['sku'] . ' ' . $path_img . ' Сохранен ' . $path);
+                        $log->write($row['sku'] . ' ' . $path_img . ' Сохранен');
                     } else {
                         $log->write($row['sku'] . ' ' . $path_img . " Ошибка загрузки файла {$url}!\n");
                     }
