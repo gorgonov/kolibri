@@ -6,9 +6,9 @@ use DiDom\Exceptions\InvalidSelectorException;
 
 require_once(DIR_SYSTEM . 'helper/arser.php');
 
-class ControllerExtensionModuleArserSv extends Arser
+class ControllerExtensionModuleArserMt extends Arser
 {
-    private const HOME = 'https://online.sv-mebel.ru';
+    private const HOME = 'https://www.metta.ru';
 
     /**
      * раскрываем группы
@@ -29,6 +29,8 @@ class ControllerExtensionModuleArserSv extends Arser
      */
     protected function getLinkProduct(Doc $document): array
     {
+        die(); // групп быть не должно
+
         // соберем ссылки на продукты
         $url = [];
         $links = $document->find('div.proposal-item__info.proposal-item__info_catalog a');
@@ -65,20 +67,21 @@ class ControllerExtensionModuleArserSv extends Arser
         }
 
         // Получаем массив - информацию о продукте
-        $items = $this->getProductInfo($document);
+        $parts = parse_url($url);
+        parse_str($parts['query'], $query);
+        $sku = $query['offer'];
+        $items = $this->getProductInfo($document, $sku);
         if (empty($items)) {
             $this->model_extension_module_arser_link->setStatus($link['id'], 'bad');
             return;
         }
+        $data['sku'] = $sku;
         $data['link'] = $link['link'];
         $data['site_id'] = $link['site_id'];
         $data['category'] = $link['category_list'];
         $data['category1c'] = $link['category1c'];
-        foreach ($items as $item) {
-            $data = array_merge($data, $item);
-            $this->model_extension_module_arser_product->addProduct($data);
-        }
-
+        $data = array_merge($data, $items);
+        $this->model_extension_module_arser_product->addProduct($data);
         $this->model_extension_module_arser_link->setStatus($link['id'], 'ok');
     }
 
@@ -87,31 +90,46 @@ class ControllerExtensionModuleArserSv extends Arser
      * @return array
      * @throws InvalidSelectorException
      */
-    private function getProductInfo(Doc $document): array
+    private function getProductInfo(Doc $document, $id): array
     {
         $ar = [];
-//        $description = $this->getDescription($document);
-        $offers = $this->getOffers($document);
-        foreach ($offers as $offer) {
-            $img = [];
-            foreach ($offer->SLIDER as $item) {
-                $img[] = self::HOME . html_entity_decode($item->SRC);
-            }
 
-            $description = html_entity_decode($offer->DISPLAY_PROPERTIES);
-            $doc = new Doc($description);
-            $sku = $this->getSku($doc);
-            $attr = $this->getAttr($doc);
-
-            $ar[] = [
-                'description' => $description,
-                'sku' => $sku,
-                'topic' => html_entity_decode($offer->NAME),
-                'aImgLink' => $img,
-                'attr' => $attr,
-
-            ];
+        $offer = $this->getCurrentOffer($document, $id);
+        $key = array_key_first($offer);
+        if (!$offer) {
+            return [];
         }
+
+        $img = [];
+        foreach ($offer[$key]->SLIDER as $item) {
+            $img[] = self::HOME . html_entity_decode($item->SRC);
+        }
+
+        $sizeImg = $document->first('#dimensions img');
+        if ($sizeImg) {
+            $img[] = self::HOME . $sizeImg->attr('src');
+        }
+
+        $treeArray = (array)$offer[$key]->TREE;
+//        $propName = array_key_first($treeArray);
+//        $id = $treeArray[$propName];
+        $id = reset($treeArray);
+
+        $topic = $offer[$key]->NAME
+            . ' '
+            . $this->getColor($document, $id);
+
+        $description = $this->getDescription($document);
+
+        $attr = $this->getAttr($document);
+
+        $ar = [
+            'description' => $description,
+            'topic' => $topic,
+            'aImgLink' => $img,
+            'attr' => $attr,
+
+        ];
 
         return $ar;
     }
@@ -143,7 +161,10 @@ class ControllerExtensionModuleArserSv extends Arser
      */
     private function getDescription(Doc $doc): string
     {
-        return $doc->first('div.product-item-detail-tab-content')->html();
+        $res = $doc->first('#desc')->innerHtml() . $doc->first('#props')->innerHtml();
+        $res = preg_replace('/\s?<img[^>]*?>.*?>\s?/si', ' ', $res);
+
+        return $res;
     }
 
     /**
@@ -155,30 +176,13 @@ class ControllerExtensionModuleArserSv extends Arser
     {
         $attrList = [];
 
-        if ($attr = $this->getAttribute($doc, 'Высота')) {
+        if ($attr = $this->getAttribute($doc, 'Максимальная нагрузка')) {
             $attrList = array_merge($attrList, $attr);
         }
-        if ($attr = $this->getAttribute($doc, 'Глубина')) {
+        if ($attr = $this->getAttribute($doc, 'Материал спинки')) {
             $attrList = array_merge($attrList, $attr);
         }
-        if ($attr = $this->getAttribute($doc, 'Ширина')) {
-            $attrList = array_merge($attrList, $attr);
-        }
-        if ($attr = $this->getAttribute($doc, 'Материал корпуса')) {
-            $attrList = array_merge($attrList, $attr);
-        }
-        if ($attr = $this->getAttribute($doc, 'Материал фасада')) {
-            $attrList = array_merge($attrList, $attr);
-        }
-        if ($attr = $this->getAttribute($doc, 'Тип направляющих')) {
-            $attrList = array_merge($attrList, $attr);
-        }
-
-        $size1 = $this->getAttribute($doc, 'Ширина спального места', true);
-        $size2 = $this->getAttribute($doc, 'Длина спального места', true);
-
-        if ($size1 && $size2) {
-            $attr = ['Размер спального места' => implode('*', [$size1, $size2])];
+        if ($attr = $this->getAttribute($doc, 'Материал сиденья')) {
             $attrList = array_merge($attrList, $attr);
         }
 
@@ -194,9 +198,9 @@ class ControllerExtensionModuleArserSv extends Arser
      */
     private function getAttribute(Doc $doc, $attrName, $is_string = false)
     {
-        $el = $doc->first("dt:contains({$attrName})");
+        $el = $doc->first("#props table td:contains({$attrName})");
         if ($el) {
-            $res = $el->nextSibling('dd')->text();
+            $res = $el->nextSibling('td')->text();
             if ($is_string) {
                 return $res;
             } else {
@@ -220,19 +224,50 @@ class ControllerExtensionModuleArserSv extends Arser
      */
     private function getOffers(Doc $document)
     {
-        $tmp = $document->first('script:contains(JCCatalogElement)::text');
+        $tmp = $document->first('script:contains(jsOffers)::text')->text();
         if (empty($tmp)) {
             return [];
         }
         $startPos = mb_strpos($tmp, "{'CONFIG'");
-        $endPos = mb_strrpos($tmp, '}');
-        $tmp = mb_substr($tmp, $startPos, $endPos - $startPos + 1);
+        $endPos = mb_strrpos($tmp, '}}');
+        $tmp = mb_substr($tmp, $startPos, $endPos - $startPos + 2);
         $tmp = preg_replace("/'/", '"', $tmp);
+        $tmp = str_replace("\t", '', $tmp);
+        $tmp = html_entity_decode($tmp);
         $json = json_decode($tmp);
 
         $offers = $json->OFFERS;
-//        $tmp = html_entity_decode($tmp);
         return $offers;
     }
 
+    private function getColor(Doc $document, $id)
+    {
+        $res = '';
+        $tmp = $document->first("input[value={$id}]");
+        if ($tmp) {
+            $res = $tmp->nextSibling('label')->getAttribute('data-tooltip');
+        }
+
+        return $res;
+    }
+
+    /**
+     * @param  Doc  $document
+     * @param $id
+     * @return array|null
+     * @throws InvalidSelectorException
+     */
+    private function getCurrentOffer(Doc $document, $id)
+    {
+        $offers = $this->getOffers($document);
+        if ($offers) {
+            foreach ($offers as $key => $offer) {
+                if ($offer->ID == $id) {
+                    return [$key => $offer];
+                }
+            }
+        }
+
+        return null;
+    }
 }
