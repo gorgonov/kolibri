@@ -6,7 +6,7 @@ use DiDom\Exceptions\InvalidSelectorException;
 
 require_once(DIR_SYSTEM . 'helper/arser.php');
 
-class ControllerExtensionModuleArserSp extends Arser
+class ControllerExtensionModuleArserE1 extends Arser
 {
     private const HOME = 'https://sitparad.com';
 
@@ -18,45 +18,13 @@ class ControllerExtensionModuleArserSp extends Arser
      */
     protected function parseGroup(array $linkGroup)
     {
-        loadDidom();
-        $link = $linkGroup['link'] . '?count=1000';
-        $document = new Doc($link, true);
-        $linkProducts = $this->getLinkProduct($document); // получим ссылки на продукты
-        $data = [];
-        foreach ($linkProducts as $item) {
-            $data[] = [
-                'site_id' => $linkGroup['site_id'],
-                'category_list' => $linkGroup['category_list'],
-                'link' => $item,
-                'is_group' => 0,
-                'category1c' => $linkGroup['category1c'],
-                'status' => 'new',
-            ];
-        }
-        $this->model_extension_module_arser_link->addLinks($data);
-        $this->model_extension_module_arser_link->deleteLinks([$linkGroup['id']]);
+        return; // здесь нет групп
     }
 
     protected function getLinkProduct(Doc $document): array
     {
         // соберем ссылки на продукты
         $url = [];
-        $html = $document->find('script[type=text/template]')[2]->innerHtml();
-        $html = str_replace(['\t', '\n', '\a'], '', $html);
-        $html = str_replace(['\"'], '"', $html);
-        $html = str_replace(['\/'], '/', $html);
-        $doc = new Doc($html);
-
-        $links = $doc->find('div.product-image>a');
-        foreach ($links as $el) {
-            if (substr($el->href, 0, 4) !== 'http') {
-                $url[] = self::HOME . $el->href;
-            } else {
-                $url[] = $el->href;
-            }
-        }
-        $url = array_unique($url);
-
         return $url;
     }
 
@@ -80,27 +48,17 @@ class ControllerExtensionModuleArserSp extends Arser
             return;
         }
 
-        $ar = $document->find('script[type=text/template]');
-        $html = end($ar)->innerHtml();
-        $html = str_replace(['\t', '\n', '\a'], '', $html);
-        $html = str_replace(['\"'], '"', $html);
-        $html = str_replace(['\/'], '/', $html);
-        $html = unicode_decode($html); // конвертируем из формата \u043e в кириллицу
-
-        $doc = new Doc($html);
-
-        // Получаем массив - информацию о продукте
-        $items = $this->getProductInfo($doc);
-        if (empty($items)) {
+        // Получаем массив продуктов со страницы
+        $data = $this->getProductInfo($document);
+        if (empty($data)) {
             $this->model_extension_module_arser_link->setStatus($link['id'], 'bad');
             return;
         }
-        $data['topic'] = $this->getTopic($document);
         $data['link'] = $link['link'];
         $data['site_id'] = $link['site_id'];
         $data['category'] = $link['category_list'];
         $data['category1c'] = $link['category1c'];
-        $data = array_merge($data, $items);
+
         $this->model_extension_module_arser_product->addProduct($data);
         $this->model_extension_module_arser_link->setStatus($link['id'], 'ok');
     }
@@ -114,15 +72,11 @@ class ControllerExtensionModuleArserSp extends Arser
     {
         $ar = [];
 
-        $img = $this->getImg($document);
-        $description = $this->getDescription($document);
-        $attr = $this->getAttr($document);
-
-        $ar = [
-            'description' => $description,
-            'aImgLink' => $img,
-            'attr' => $attr,
-        ];
+        $ar['attr'] = $this->getAttr($document);
+        $ar['topic'] = $this->getTopic($document);
+        $ar['sku'] = $this->getSku($document);
+        $ar['aImgLink'] = $this->getImg($document);
+        $ar['description'] = $this->getDescription($document);
 
         return $ar;
     }
@@ -184,15 +138,11 @@ class ControllerExtensionModuleArserSp extends Arser
     private function getAttr(Doc $doc)
     {
         $attrList = [];
-
-        if ($attr = $this->getAttribute($doc, 'Ширина')) {
-            $attrList = array_merge($attrList, $attr);
-        }
-        if ($attr = $this->getAttribute($doc, 'Глубина')) {
-            $attrList = array_merge($attrList, $attr);
-        }
-        if ($attr = $this->getAttribute($doc, 'Высота')) {
-            $attrList = array_merge($attrList, $attr);
+        $ar = $doc->find('li.active[title]');
+        foreach ($ar as $element) {
+            $name = explode(',', $element->title)[0];
+            $value = explode(' ', $element->title)[2];
+            $attrList[$name] = $value;
         }
 
         return $attrList;
@@ -272,6 +222,7 @@ class ControllerExtensionModuleArserSp extends Arser
 
     private function getTopic(Doc $document)
     {
-        return trim($document->first('h1')->text());
+        $s = trim($document->first('#pagetitle')->text());
+        return $s;
     }
 }
