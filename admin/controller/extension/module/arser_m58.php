@@ -73,7 +73,7 @@ class ControllerExtensionModuleArserM58 extends Arser
 //        $ar['sku'] = $this->getSku($document);
         $ar['aImgLink'] = $this->getImg($document);
         $ar['description'] = $this->getDescription($document);
-        $ar['attr'] = $this->getAttr($ar['description']);
+        $ar['attr'] = $this->getAttr($document);
 
         return $ar;
     }
@@ -105,7 +105,12 @@ class ControllerExtensionModuleArserM58 extends Arser
      */
     private function getDescription(Doc $doc): string
     {
-        $res = $doc->first('#tab-description ul>li')->parent()->innerHtml();
+        $ar = [];
+        $liList = $doc->find('#tab-description ul>li');
+        foreach ($liList as $item) {
+            $ar[] = $item->text();
+        }
+        $res = implode('<br>', $ar);
 
         return $res;
     }
@@ -115,9 +120,9 @@ class ControllerExtensionModuleArserM58 extends Arser
      * @return array|false
      * @throws InvalidSelectorException
      */
-    private function getAttr(string $description)
+    private function getAttr(\DiDom\Document $document)
     {
-        $doc = new \DiDom\Document($description);
+        $doc = $document->first('#tab-description li')->parent()->getDocument();
         $attrList = [];
 
         if ($attr = $this->getAttribute($doc, 'Ширина')) {
