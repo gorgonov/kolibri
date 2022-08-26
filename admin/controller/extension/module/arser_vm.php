@@ -119,9 +119,9 @@ class ControllerExtensionModuleArserVm extends Arser
     {
         $res = [];
 
-        if ($slide = $document->find('.product-page__img-slider-item a')) {
+        if ($slide = $document->find('.detail_item__picture__block__big a')) {
             foreach ($slide as $item) {
-                $res[] = $item->href;
+                $res[] = self::HOME . $item->href;
             }
         }
 
@@ -138,11 +138,11 @@ class ControllerExtensionModuleArserVm extends Arser
     private function getDescription(Doc $doc): string
     {
         $res = '';
-        if ($el = $doc->first('div[itemprop=description]')) {
+        if ($el = $doc->first('div[tab=description]')) {
             $res .= $el->html();
         }
 
-        if ($el = $doc->first('div.product-info__table')) {
+        if ($el = $doc->first('div.detail_item__info__props__table')) {
             $res .= $el->html();
         }
 
@@ -184,11 +184,19 @@ class ControllerExtensionModuleArserVm extends Arser
      */
     private function getAttribute(Doc $doc, $attrName, $is_digit = false)
     {
+        // если характеристики в таблице
         $el = $doc->first("dt:contains({$attrName})");
         if ($el) {
             $res = $el->nextSibling('dd')->text();
             return [$attrName => $res];
         }
+        // если характеристики в дивах
+        $el = $doc->first("div.detail_item__info__props__table__row__name:contains({$attrName})");
+        if ($el) {
+            $res = $el->nextSibling('div.detail_item__info__props__table__row__value')->text();
+            return [$attrName => $res];
+        }
+
 
         return false;
     }
