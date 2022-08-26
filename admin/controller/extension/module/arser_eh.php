@@ -52,6 +52,11 @@ class ControllerExtensionModuleArserEh extends Arser
             $url[] = self::HOME . $el->href;
         }
 
+        $links = $document->find('a.list_img_wrapper.hidden_img_wrapper');
+        foreach ($links as $el) {
+            $url[] = self::HOME . $el->href;
+        }
+
         $url = array_unique($url);
 
         return $url;
