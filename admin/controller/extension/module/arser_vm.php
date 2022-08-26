@@ -138,7 +138,11 @@ class ControllerExtensionModuleArserVm extends Arser
     private function getDescription(Doc $doc): string
     {
         $res = '';
-        if ($el = $doc->first('div[tab=description]')) {
+//        if ($el = $doc->first('div[tab=description]')) {
+//            $res .= $el->html();
+//        }
+//
+        if ($el = $doc->first('div[tab=properties] div.detail_item__info__panes__item__inner')) {
             $res .= $el->html();
         }
 
@@ -190,13 +194,18 @@ class ControllerExtensionModuleArserVm extends Arser
             $res = $el->nextSibling('dd')->text();
             return [$attrName => $res];
         }
-        // если характеристики в дивах
+        // если характеристики в дивах вариант 1
         $el = $doc->first("div.detail_item__info__props__table__row__name:contains({$attrName})");
         if ($el) {
             $res = $el->nextSibling('div.detail_item__info__props__table__row__value')->text();
             return [$attrName => $res];
         }
-
+        // если характеристики в дивах вариант 2
+        $el = $doc->first("div.detail_item__info__panes__item__inner__element__title:contains({$attrName})");
+        if ($el) {
+            $res = $el->nextSibling('div.detail_item__info__panes__item__inner__element__value')->text();
+            return [$attrName => $res];
+        }
 
         return false;
     }
@@ -207,6 +216,9 @@ class ControllerExtensionModuleArserVm extends Arser
      * @throws InvalidSelectorException
      */
     private function getTopic(Doc $document) {
-        return $document->first('h1::text');
+        $res = $document->first('h1::text');
+        $res = trim(str_replace('в Новосибирске', '', $res));
+
+        return $res;
     }
 }
