@@ -3,6 +3,29 @@
 class ControllerExtensionModuleArserSite extends Controller
 {
     private $error = [];
+    private const PRODUCT_ATTRIBUTE = [
+        'Ширина'=> 12,
+        'Высота'=> 13,
+        'Глубина'=> 14,
+        'Длина'=> 15,
+        'Материал корпуса'=> 16,
+        'Цвет'=> 18,
+        'Размер спального места'=> 19,
+        'Наполнение'=> 20,
+        'Жесткость'=> 21,
+        'Материал фасадов'=> 22,
+        'Материал фасада'=> 22,
+        'Тип матраса'=> 24,
+        'Подъемный механизм'=> 25,
+        'Максимально допустимый вес'=> 96,
+        'Макс. нагрузка на спальное место (кг)'=> 97,
+        'Тип направляющих'=> 136,
+        'Материал спинки'=> 137,
+        'Материал сиденья'=> 138,
+        'Максимальная нагрузка'=> 139,
+        'Изготовление в любом цвете'=> 184,
+        'Количество упаковок'=> 185,
+    ];
 
     /**
      * Check if the table 'ar_site' exists
@@ -2108,9 +2131,6 @@ class ControllerExtensionModuleArserSite extends Controller
                 echo '$i=';
                 var_dump($i);
                 echo PHP_EOL;
-                echo '$pInfo=';
-                var_dump($pInfo);
-                echo PHP_EOL;
                 die();
             }
 
@@ -2145,9 +2165,6 @@ class ControllerExtensionModuleArserSite extends Controller
                 echo '$i=';
                 var_dump($i);
                 echo PHP_EOL;
-                echo '$pInfo=';
-                var_dump($pInfo);
-                echo PHP_EOL;
                 die();
             }
 
@@ -2173,12 +2190,12 @@ class ControllerExtensionModuleArserSite extends Controller
             }
 
             try {
-                if (isset($attr)) {
+                if (!empty($attr)) {
                     foreach ($attr as $key => $item) {
                         $objPHPExcel->getSheetByName('ProductAttributes')
                             ->setCellValue('A' . $i['ProductAttributes'], $product_id)
                             ->setCellValue('B' . $i['ProductAttributes'], 'Фильтры')
-                            ->setCellValue('C' . $i['ProductAttributes'], $key)
+                            ->setCellValue('C' . $i['ProductAttributes'], self::PRODUCT_ATTRIBUTE[$key] ?? $key)
                             ->setCellValue('D' . $i['ProductAttributes'], $item);
                         $i['ProductAttributes']++;
                     }
@@ -2391,7 +2408,7 @@ class ControllerExtensionModuleArserSite extends Controller
      * @param $url
      * @return array|string|string[]
      */
-    protected function сyrillicUrl($url)
+    protected function cyrillicUrl($url)
     {
         if (preg_match('#^([\w\d]+://)([^/]+)(.*)$#iu', $url, $m)) {
             $url = $m[1] . idn_to_ascii($m[2], IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46) . $m[3];
@@ -2565,7 +2582,7 @@ class ControllerExtensionModuleArserSite extends Controller
                 'headers' => [
                     'product_id',
                     'attribute_group',
-                    'attribute',
+                    'attribute_id',
                     'text(ru-ru)',
                 ],
             ],

@@ -106,7 +106,7 @@ class ControllerExtensionModuleArserIc extends Arser
         foreach ($offers as $offer) {
             $attr = [];
             foreach ($offer->DISPLAY_PROPERTIES as $item) {
-                $attr[$item->NAME] = $item->VALUE;
+                $attr[$item->NAME] = str_replace('\\','/', $item->VALUE);
             }
 
             $img = [];
