@@ -95,6 +95,11 @@ class ControllerExtensionModuleArserBts extends Arser
             $res[] = 'https:'.$aTmp[1];
         }
 
+        $slide = $document->find('img.product__slide-img.product__slide-img_rectangle');
+        foreach ($slide as $item) {
+            $res[] = 'https:' . $item->src;
+        }
+
         return $res;
     }
 
