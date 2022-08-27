@@ -114,6 +114,12 @@ class ControllerExtensionModuleArserBts extends Arser
         if ($el = $doc->first('div.product__info-item')->html()) {
             $res .= $el;
         }
+        if ($el = $doc->first('div#description div.props__text-content')->html()) {
+            $res .= $el;
+        }
+        $res = str_replace(' ', ' ', $res);
+        $res = str_replace(' от компании «Семья Мебелони»', '', $res);
+
         return $res;
     }
 
