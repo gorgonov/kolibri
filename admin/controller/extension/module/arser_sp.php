@@ -80,29 +80,68 @@ class ControllerExtensionModuleArserSp extends Arser
             return;
         }
 
-        $ar = $document->find('script[type=text/template]');
-        $html = end($ar)->innerHtml();
-        $html = str_replace(['\t', '\n', '\a'], '', $html);
-        $html = str_replace(['\"'], '"', $html);
-        $html = str_replace(['\/'], '/', $html);
-        $html = unicode_decode($html); // конвертируем из формата \u043e в кириллицу
+        $form = $document->first('form.variations_form.cart');
+        if (empty($form)) {
+            $data = $this->getProductInfo($document);
+            if (empty($data)) {
+                $this->model_extension_module_arser_link->setStatus($link['id'], 'bad');
+            } else {
+                $data['link'] = $link['link'];
+                $data['site_id'] = $link['site_id'];
+                $data['category'] = $link['category_list'];
+                $data['category1c'] = $link['category1c'];
+                $this->model_extension_module_arser_product->addProduct($data);
+                $this->model_extension_module_arser_link->setStatus($link['id'], 'ok');
+            }
+        } else {
+            $action = $form->getAttribute('action');
+            $variations = json_decode($form->getAttribute('data-product_variations'));
+            $color = $this->getColors($document);
+            foreach ($variations as $variation) {
+//            https://sitparad.ru/product/stul-sevilia/?data-product_id=2265&attribute_pa_color=bordovyj
+                $urlProduct = $action . '?attribute_pa_color=' . $variation->attributes->attribute_pa_color;
+                $document = (new Doc($urlProduct, true));
+                $data = $this->getProductInfo($document);
+                if (empty($data)) {
+                    $this->model_extension_module_arser_link->setStatus($link['id'], 'bad');
+                } else {
+                    $data['topic'] = $data['topic'] . ' ' . $color[$variation->attributes->attribute_pa_color];
+                    $data['link'] = $link['link']; // $urlProduct;
+                    $data['site_id'] = $link['site_id'];
+                    $data['category'] = $link['category_list'];
+                    $data['category1c'] = $link['category1c'];
+                    $this->model_extension_module_arser_product->addProduct($data);
+                }
+            }
+        }
+        $this->model_extension_module_arser_link->setStatus($link['id'], 'ok');
+    }
 
-        $doc = new Doc($html);
+    public function parseNextProduct()
+    {
+        $siteId = $this->request->get['site_id'];
+        $this->load->model('extension/module/arser_link');
+        $productLinks = $this->model_extension_module_arser_link->getNextLink($siteId);
 
-        // Получаем массив - информацию о продукте
-        $items = $this->getProductInfo($doc);
-        if (empty($items)) {
-            $this->model_extension_module_arser_link->setStatus($link['id'], 'bad');
+        if (count($productLinks) == 0) { // все товары парсены
+            $json = [
+                'link_count' => count($productLinks),
+                'link_product_count' => count($productLinks),
+                'status' => 'finish',
+            ];
+            echo json_encode($json);
             return;
         }
-        $data['topic'] = $this->getTopic($document);
-        $data['link'] = $link['link'];
-        $data['site_id'] = $link['site_id'];
-        $data['category'] = $link['category_list'];
-        $data['category1c'] = $link['category1c'];
-        $data = array_merge($data, $items);
-        $this->model_extension_module_arser_product->addProduct($data);
-        $this->model_extension_module_arser_link->setStatus($link['id'], 'ok');
+
+        $this->parseProduct($productLinks[0]);
+        $link_count = $this->model_extension_module_arser_link->getLinkCount($siteId);
+
+        $json = [
+            'link_count' => $link_count['all'],
+            'link_product_count' => ($link_count['ok'] ?? 0) + ($link_count['bad'] ?? 0),
+            'status' => 'go',
+        ];
+        echo json_encode($json);
     }
 
     /**
@@ -114,11 +153,13 @@ class ControllerExtensionModuleArserSp extends Arser
     {
         $ar = [];
 
+        $topic = $this->getTopic($document);
         $img = $this->getImg($document);
         $description = $this->getDescription($document);
-        $attr = $this->getAttr($document);
+        $attr = $this->getAttr(new Doc($description));
 
         $ar = [
+            'topic' => $topic,
             'description' => $description,
             'aImgLink' => $img,
             'attr' => $attr,
@@ -160,18 +201,10 @@ class ControllerExtensionModuleArserSp extends Arser
      */
     private function getDescription(Doc $doc): string
     {
-        $res = $doc->first('#tab-description')->innerHtml();
-        $res .= $doc->first('#tab-additional_information')->innerHtml();
-
-        $res = str_replace("\t", '', $res);
-        // удалить ссылки
-        $res = preg_replace('/\s?<a[^>]*?>(.*?)<\/a>\s?/', '\\1', $res);
-        // удалить h2
-        $res = preg_replace('/\s?<h2[^>]*?>.*?<\/h2>\s?/si', ' ', $res);
-        // удалить все атрибуты
-//        $res = preg_replace("/(<[a-z]).*?(>)/i", '\\1\\2', $res);
-        // удалить class
-        $res = preg_replace('/\s?class=["][^"]*"\s?/i', ' ', $res);
+        $res = $doc->first('div.woocommerce-Tabs-panel--additional_information')->innerHtml();
+        if (empty($res)) {
+            $res = $doc->first('div.#tab-additional_information')->innerHtml();
+        }
 
         return $res;
     }
@@ -207,9 +240,9 @@ class ControllerExtensionModuleArserSp extends Arser
      */
     private function getAttribute(Doc $doc, $attrName, $is_string = false)
     {
-        $el = $doc->first("table th:contains({$attrName})");
+        $el = $doc->first("div:contains({$attrName})");
         if ($el) {
-            $res = $el->nextSibling('td')->text();
+            $res = $el->nextSibling('div')->text();
             $res = digit($res);
             if ($is_string) {
                 return $res;
@@ -273,5 +306,18 @@ class ControllerExtensionModuleArserSp extends Arser
     private function getTopic(Doc $document)
     {
         return trim($document->first('h1')->text());
+    }
+
+    private function getColors(Doc $document)
+    {
+        $color = [];
+        $options = $document->find('select#pa_color option');
+        foreach ($options as $option) {
+            if ($option->value !== '') {
+                $color[$option->value] = $option->text();
+            }
+        }
+
+        return $color;
     }
 }
