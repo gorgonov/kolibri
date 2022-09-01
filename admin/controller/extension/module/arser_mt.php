@@ -66,22 +66,28 @@ class ControllerExtensionModuleArserMt extends Arser
             return;
         }
 
-        // Получаем массив - информацию о продукте
-        $parts = parse_url($url);
-        parse_str($parts['query'], $query);
-        $sku = $query['offer'];
-        $items = $this->getProductInfo($document, $sku);
-        if (empty($items)) {
-            $this->model_extension_module_arser_link->setStatus($link['id'], 'bad');
-            return;
+        $description = $this->getDescription($document);
+        $attr = $this->getAttr(new Doc($description));
+
+        $offers = $this->getOffers($document);
+        foreach ($offers as $offer) {
+            $images = array_map(function($x){
+                return self::HOME . $x->SRC;
+            }, $offer->photos);
+
+            $data['site_id'] = $link['site_id'];
+            $data['link'] = $link['link'];
+            $data['category'] = $link['category_list'];
+            $data['category1c'] = $link['category1c'];
+            $data['sku'] = $offer->id;
+            $data['topic'] = $offer->name;
+            $data['description'] = $description;
+            $data['aImgLink'] = $images;
+            $data['attr'] = $attr;
+//            $data['product_option'] = $offer->id;
+
+            $this->model_extension_module_arser_product->addProduct($data);
         }
-        $data['sku'] = $sku;
-        $data['link'] = $link['link'];
-        $data['site_id'] = $link['site_id'];
-        $data['category'] = $link['category_list'];
-        $data['category1c'] = $link['category1c'];
-        $data = array_merge($data, $items);
-        $this->model_extension_module_arser_product->addProduct($data);
         $this->model_extension_module_arser_link->setStatus($link['id'], 'ok');
     }
 
@@ -161,8 +167,10 @@ class ControllerExtensionModuleArserMt extends Arser
      */
     private function getDescription(Doc $doc): string
     {
-        $res = $doc->first('#desc')->innerHtml() . $doc->first('#props')->innerHtml();
-        $res = preg_replace('/\s?<img[^>]*?>.*?>\s?/si', ' ', $res);
+        $res = $doc->first('div[data-tab=char]')->innerHtml()
+            . $doc->first('div[data-tab=descr]')->innerHtml();
+        $res = str_replace('/api/product/image/', self::HOME . '/api/product/image/', $res);
+/*        $res = preg_replace('/\s?<img[^>]*?>.*?>\s?/si', ' ', $res);*/
 
         return $res;
     }
@@ -176,15 +184,15 @@ class ControllerExtensionModuleArserMt extends Arser
     {
         $attrList = [];
 
-        if ($attr = $this->getAttribute($doc, 'Максимальная нагрузка')) {
+        if ($attr = $this->getAttribute($doc, 'Максимальная нагрузка', true)) {
             $attrList = array_merge($attrList, $attr);
         }
-        if ($attr = $this->getAttribute($doc, 'Материал спинки')) {
-            $attrList = array_merge($attrList, $attr);
-        }
-        if ($attr = $this->getAttribute($doc, 'Материал сиденья')) {
-            $attrList = array_merge($attrList, $attr);
-        }
+//        if ($attr = $this->getAttribute($doc, 'Материал спинки')) {
+//            $attrList = array_merge($attrList, $attr);
+//        }
+//        if ($attr = $this->getAttribute($doc, 'Материал сиденья')) {
+//            $attrList = array_merge($attrList, $attr);
+//        }
 
         return $attrList;
     }
@@ -196,25 +204,19 @@ class ControllerExtensionModuleArserMt extends Arser
      * @return array|false|string
      * @throws InvalidSelectorException
      */
-    private function getAttribute(Doc $doc, $attrName, $is_string = false)
+    private function getAttribute(Doc $doc, $attrName, bool $is_digit = false)
     {
-        $el = $doc->first("#props table td:contains({$attrName})");
+        $el = $doc->first("div.char-prop__title:contains({$attrName})");
         if ($el) {
-            $res = $el->nextSibling('td')->text();
-            if ($is_string) {
-                return $res;
-            } else {
-                return [$attrName => $res];
+            $res = $el->nextSibling('div.char-prop__value')->text();
+            if ($is_digit) {
+                $res = preg_replace('/[^0-9]/', '', $res);
             }
+
+            return [$attrName => $res];
         }
 
-
         return false;
-    }
-
-    private function getSku(Doc $document)
-    {
-        return $this->getAttribute($document, 'Артикул', true);
     }
 
     /**
@@ -224,19 +226,19 @@ class ControllerExtensionModuleArserMt extends Arser
      */
     private function getOffers(Doc $document)
     {
-        $tmp = $document->first('script:contains(jsOffers)::text')->text();
+        $tmp = $document->first('script:contains(new ProductCard)')->text();
         if (empty($tmp)) {
             return [];
         }
-        $startPos = mb_strpos($tmp, "{'CONFIG'");
-        $endPos = mb_strrpos($tmp, '}}');
-        $tmp = mb_substr($tmp, $startPos, $endPos - $startPos + 2);
-        $tmp = preg_replace("/'/", '"', $tmp);
-        $tmp = str_replace("\t", '', $tmp);
-        $tmp = html_entity_decode($tmp);
+        $startPos = mb_strpos($tmp, "(");
+        $endPos = mb_strrpos($tmp, ');');
+        $tmp = mb_substr($tmp, $startPos+1, $endPos - $startPos-1);
+//        $tmp = preg_replace("/'/", '"', $tmp);
+//        $tmp = str_replace("\t", '', $tmp);
+//        $tmp = html_entity_decode($tmp);
         $json = json_decode($tmp);
+        $offers = $json->offers;
 
-        $offers = $json->OFFERS;
         return $offers;
     }
 

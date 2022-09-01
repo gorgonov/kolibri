@@ -167,6 +167,7 @@ class ControllerExtensionModuleArserBts extends Arser
             if ($is_digit) {
                 $res = preg_replace('/[^0-9]/', '', $res);
             }
+
             return [$attrName => $res];
         }
 

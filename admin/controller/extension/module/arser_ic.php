@@ -69,6 +69,7 @@ class ControllerExtensionModuleArserIc extends Arser
 
         loadDidom();
 
+        sleep(1); // защита от большого колличества запросов в секунду
         $document = (new Doc($link['link'], true));
         if (!$document) {
             $this->model_extension_module_arser_link->setStatus($link['id'], 'bad', 'Не удалось прочитать страницу');
