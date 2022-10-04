@@ -111,11 +111,11 @@ class ControllerExtensionModuleArserBts extends Arser
     private function getDescription(Doc $doc): string
     {
         $res = '';
-        if ($el = $doc->first('div.product__info-item')->html()) {
-            $res .= $el;
+        if ($el = $doc->first('div.product__info-item')) {
+            $res .= $el->html();
         }
-        if ($el = $doc->first('div#description div.props__text-content')->html()) {
-            $res .= $el;
+        if ($el = $doc->first('div#description div.props__text-content')) {
+            $res .= $el->html();
         }
         $res = str_replace(' ', ' ', $res);
         $res = str_replace(' от компании «Семья Мебелони»', '', $res);
