@@ -49,9 +49,10 @@ class ControllerExtensionModuleArserVm extends Arser
     {
         // соберем ссылки на продукты
         $url = [];
-        $links = $document->find('a.products-list__img-item');
+        $links = $document->find('a.products-list__img-item')
+            ?: $document->find('div.catalog-section a.catalog_item__name');
         foreach ($links as $el) {
-            $url[] = $el->href;
+            $url[] = self::HOME . $el->href;
         }
 
         $url = array_unique($url);
