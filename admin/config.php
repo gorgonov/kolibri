@@ -1,27 +1,18 @@
 <?php
-
-
-ini_set('display_errors', 1);
-
-ini_set('display_startup_errors', 1);
-
-error_reporting(E_ALL);
-
-
 // HTTP
-define('HTTP_SERVER', 'http://kolibri.loc/admin/');
-define('HTTP_CATALOG', 'http://kolibri.loc/');
+define('HTTP_SERVER', 'http://localhost/admin/');
+define('HTTP_CATALOG', 'http://localhost/');
 
 // HTTPS
-define('HTTPS_SERVER', 'http://kolibri.loc/admin/');
-define('HTTPS_CATALOG', 'http://kolibri.loc/');
+define('HTTPS_SERVER', 'http://localhost/admin/');
+define('HTTPS_CATALOG', 'http://localhost/');
 
 // DIR
-define('DIR_APPLICATION', '/home/papaha/domains/opencart/admin/');
-define('DIR_SYSTEM', '/home/papaha/domains/opencart/system/');
-define('DIR_IMAGE', '/home/papaha/domains/opencart/image/');
-define('DIR_STORAGE', '/home/papaha/domains/storage/');
-define('DIR_CATALOG', '/home/papaha/domains/opencart/catalog/');
+define('DIR_APPLICATION', '/var/www/public/admin/');
+define('DIR_SYSTEM', '/var/www/public/system/');
+define('DIR_IMAGE', '/var/www/public/image/');
+define('DIR_STORAGE', '/var/www/storage/');
+define('DIR_CATALOG', '/var/www/public/catalog/');
 define('DIR_LANGUAGE', DIR_APPLICATION . 'language/');
 define('DIR_TEMPLATE', DIR_APPLICATION . 'view/template/');
 define('DIR_CONFIG', DIR_SYSTEM . 'config/');
@@ -34,9 +25,9 @@ define('DIR_UPLOAD', DIR_STORAGE . 'upload/');
 
 // DB
 define('DB_DRIVER', 'mysqli');
-define('DB_HOSTNAME', 'localhost');
+define('DB_HOSTNAME', 'mysql');
 define('DB_USERNAME', 'root');
-define('DB_PASSWORD', '123456');
+define('DB_PASSWORD', 'root');
 define('DB_DATABASE', 'opencart');
 define('DB_PORT', '3306');
 define('DB_PREFIX', 'oc_');
