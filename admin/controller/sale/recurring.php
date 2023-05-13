@@ -62,7 +62,7 @@ class ControllerSaleRecurring extends Controller {
 		}
 
 		if (isset($this->request->get['page'])) {
-			$page = $this->request->get['page'];
+			$page = (int)$this->request->get['page'];
 		} else {
 			$page = 1;
 		}
@@ -279,7 +279,7 @@ class ControllerSaleRecurring extends Controller {
 		for ($i = 1; $i <= 6; $i++) {
 			$data['recurring_statuses'][$i] = array(
 				'text'  => $this->language->get('text_status_' . $i),
-				'value' => 1
+				'value' => $i,
 			);		
 		}
 
@@ -306,7 +306,7 @@ class ControllerSaleRecurring extends Controller {
 		
 			$this->document->setTitle($this->language->get('heading_title'));
 
-			$data['user_token'] = $this->request->get['user_token'];
+			$data['user_token'] = $this->session->data['user_token'];
 			
 			$url = '';
 

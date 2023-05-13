@@ -1,11 +1,10 @@
 <?php
 // Heading
 $_['heading_title']       = 'Макеты';
-$_['heading_title1']       = 'Макеты';
 
 // Text
 $_['text_success']        = 'Настройки успешно изменены!';
-$_['text_list']           = 'Список макетов';
+$_['text_list']           = 'Макеты';
 $_['text_add']            = 'Добавить';
 $_['text_edit']           = 'Редактирование';
 $_['text_remove']         = 'Удалить';

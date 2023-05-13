@@ -158,7 +158,7 @@ class ControllerMarketplaceModification extends Controller {
 				foreach ($files as $file) {
 					$operations = $file->getElementsByTagName('operation');
 
-					$files = explode('|', $file->getAttribute('path'));
+					$files = explode('|', str_replace("\\", '/', $file->getAttribute('path')));
 
 					foreach ($files as $file) {
 						$path = '';
@@ -203,6 +203,11 @@ class ControllerMarketplaceModification extends Controller {
 
 										// Log
 										$log[] = PHP_EOL . 'FILE: ' . $key;
+
+									} else {
+										// Log
+										$log[] = PHP_EOL . 'FILE: (sub modification) ' . $key;
+									
 									}
 
 									foreach ($operations as $operation) {
@@ -623,7 +628,7 @@ class ControllerMarketplaceModification extends Controller {
 		}
 
 		if (isset($this->request->get['page'])) {
-			$page = $this->request->get['page'];
+			$page = (int)$this->request->get['page'];
 		} else {
 			$page = 1;
 		}
