@@ -193,7 +193,7 @@ class ModelLocalisationLanguage extends Model {
 		$query = $this->db->query("SELECT * FROM " . DB_PREFIX . "recurring_description WHERE language_id = '" . (int)$this->config->get('config_language_id') . "'");
 
 		foreach ($query->rows as $recurring) {
-			$this->db->query("INSERT INTO " . DB_PREFIX . "recurring_description SET recurring_id = '" . (int)$recurring['recurring_id'] . "', language_id = '" . (int)$language_id . "', name = '" . $this->db->escape($recurring['name']));
+			$this->db->query("INSERT INTO " . DB_PREFIX . "recurring_description SET recurring_id = '" . (int)$recurring['recurring_id'] . "', language_id = '" . (int)$language_id . "', name = '" . $this->db->escape($recurring['name'])."'");
 		}
 
 		return $language_id;
@@ -215,17 +215,11 @@ class ModelLocalisationLanguage extends Model {
 	
 	public function deleteLanguage($language_id) {
 		$this->db->query("DELETE FROM " . DB_PREFIX . "language WHERE language_id = '" . (int)$language_id . "'");
+ 		$this->db->query("DELETE FROM " . DB_PREFIX . "seo_url WHERE language_id = '" . (int)$language_id . "'"); 
 		
 		$this->cache->delete('catalog.language');
 		$this->cache->delete('admin.language');
-		
-		/*
-		Do not put any delete code for related tables for languages!!!!!!!!!
-		
-		It is not required as when ever you re save to a multi language table then the entries for the deleted language will also be deleted! 
-		
-		Wasting my time with people adding code here!
-		*/
+
 	}
 
 	public function getLanguage($language_id) {
@@ -272,7 +266,7 @@ class ModelLocalisationLanguage extends Model {
 
 			return $query->rows;
 		} else {
-			$language_data = $this->cache->get('language');
+			$language_data = $this->cache->get('admin.language');
 
 			if (!$language_data) {
 				$language_data = array();

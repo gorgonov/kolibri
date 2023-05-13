@@ -1,4 +1,4 @@
-<?php // ==========================================  seo_url.php v.140618 opencart-russia.ru ===============================
+<?php
 class ControllerStartupSeoUrl extends Controller {
 	public function index() {
 		// Add rewrite to url class
@@ -62,47 +62,6 @@ class ControllerStartupSeoUrl extends Controller {
 					$this->request->get['route'] = 'information/information';
 				}
 			}
-		// Redirect 301   
-		} elseif (isset($this->request->get['route']) && empty($this->request->post) && !isset($this->request->get['token']) && $this->config->get('config_seo_url')) {
-			$arg = '';
-			$cat_path = false;
-			$route = $this->request->get['route'];
-
-			if ($this->request->get['route'] == 'product/product' && isset($this->request->get['product_id'])) {
-				$route = 'product_id=' . (int)$this->request->get['product_id'];
-			} elseif ($this->request->get['route'] == 'product/category' && isset($this->request->get['path'])) {
-				$categorys_id = explode('_', $this->request->get['path']);
-				$cat_path = '';
-				foreach ($categorys_id as $category_id) {
-					$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "seo_url` WHERE `query` = 'category_id=" . (int)$category_id . "' AND `store_id` = '" . (int)$this->config->get('config_store_id') . "' AND `language_id` = '" . (int)$this->config->get('config_language_id') . "'");   
-					if ($query->num_rows && $query->row['keyword'] /**/ ) {
-						$cat_path .= '/' . $query->row['keyword'];
-					} else {
-						$cat_path = false;
-						break;
-					}
-				}
-				$arg = trim($cat_path, '/');
-				if (isset($this->request->get['page'])) $arg = $arg . '?page=' . (int)$this->request->get['page'];
-			} elseif ($this->request->get['route'] == 'product/manufacturer/info' && isset($this->request->get['manufacturer_id'])) {
-				$route = 'manufacturer_id=' . (int)$this->request->get['manufacturer_id'];
-				if (isset($this->request->get['page'])) $arg = $arg . '?page=' . (int)$this->request->get['page'];
-			} elseif ($this->request->get['route'] == 'information/information' && isset($this->request->get['information_id'])) {
-				$route = 'information_id=' . (int)$this->request->get['information_id'];
-			} elseif (sizeof($this->request->get) > 1) {
-				$args = '?' . str_replace("route=" . $this->request->get['route'].'&amp;', "", $this->request->server['QUERY_STRING']);
-				$arg = str_replace('&amp;', '&', $args);
-			}
-
-			$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "seo_url` WHERE `query` = '" . $this->db->escape($route) . "' AND `store_id` = '" . (int)$this->config->get('config_store_id') . "' AND `language_id` = '" . (int)$this->config->get('config_language_id') . "'");
-
-			if (!empty($query->num_rows) && !empty($query->row['keyword']) && $route) {
-				$this->response->redirect($query->row['keyword'] . $arg, 301);
-			} elseif ($cat_path) {
-				$this->response->redirect($arg, 301);
-			} elseif ($this->request->get['route'] == 'common/home') {
-				$this->response->redirect(HTTP_SERVER . $arg, 301);
-			}
 		}
 	}
 
@@ -141,11 +100,6 @@ class ControllerStartupSeoUrl extends Controller {
 					}
 
 					unset($data[$key]);
-				} elseif ($key == 'route') {
-					$query = $this->db->query("SELECT * FROM " . DB_PREFIX . "seo_url WHERE `query` = '" . $this->db->escape($data['route']) . "' AND store_id = '" . (int)$this->config->get('config_store_id') . "' AND language_id = '" . (int)$this->config->get('config_language_id') . "'");
-					if ($query->num_rows) /**/ {
-						$url .= '/' . $query->row['keyword'];
-					}
 				}
 			}
 		}

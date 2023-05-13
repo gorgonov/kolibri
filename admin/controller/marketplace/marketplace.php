@@ -164,7 +164,7 @@ class ControllerMarketplaceMarketplace extends Controller {
 
 		$response_info = json_decode($response, true);
 
-		$extension_total = $response_info['extension_total'];
+		$extension_total = $response_info['extension_total'] ?? 0;
 
 		$url  = '';
 
@@ -202,7 +202,7 @@ class ControllerMarketplaceMarketplace extends Controller {
 
 		$data['promotions'] = array();
 
-		if ($response_info['promotions'] && $page == 1) {
+		if (isset($response_info['promotions']) && $response_info['promotions'] && $page == 1) {
 			foreach ($response_info['promotions'] as $result) {
 				$data['promotions'][] = array(
 					'name'         => $result['name'],
@@ -219,7 +219,7 @@ class ControllerMarketplaceMarketplace extends Controller {
 
 		$data['extensions'] = array();
 
-		if ($response_info['extensions']) {
+		if (isset($response_info['extensions']) && $response_info['extensions']) {
 			foreach ($response_info['extensions'] as $result) {
 				$data['extensions'][] = array(
 					'name'         => utf8_decode($result['name']),
@@ -984,7 +984,7 @@ class ControllerMarketplaceMarketplace extends Controller {
 		}
 
 		if (isset($this->request->get['page'])) {
-			$page = $this->request->get['page'];
+			$page = (int)$this->request->get['page'];
 		} else {
 			$page = 1;
 		}
@@ -992,7 +992,7 @@ class ControllerMarketplaceMarketplace extends Controller {
 		$data['button_more'] = $this->language->get('button_more');
 		$data['button_reply'] = $this->language->get('button_reply');
 
-		$curl = curl_init(OPENCART_SERVER . 'index.php?route=marketplace/api/comment&extension_id=' . $extension_id . '&page=' . $page);
+		$curl = curl_init(OPENCART_SERVER . 'index.php?route=api/marketplace/comment&extension_id=' . $extension_id . '&page=' . $page);
 
 		curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
@@ -1063,7 +1063,7 @@ class ControllerMarketplaceMarketplace extends Controller {
 		}
 
 		if (isset($this->request->get['page'])) {
-			$page = $this->request->get['page'];
+			$page = (int)$this->request->get['page'];
 		} else {
 			$page = 1;
 		}
