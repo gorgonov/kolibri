@@ -79,7 +79,7 @@ class ControllerExtensionModuleArserIc extends Arser
         // Получаем массив - информацию о продукте
         $items = $this->getProductInfo($document);
         if (empty($items)) {
-            $this->model_extension_module_arser_link->setStatus($link['id'], 'bad');
+            $this->model_extension_module_arser_link->setStatus($link['id'], 'bad', 'Не удалось получить информацию о продукте');
             return;
         }
         $data['link'] = $link['link'];
@@ -103,26 +103,48 @@ class ControllerExtensionModuleArserIc extends Arser
     {
         $ar = [];
         $description = $this->getDescription($document);
+        $additionalProperty = $this->getAdditionalProperty($document);
+
         $offers = $this->getOffers($document);
-        foreach ($offers as $offer) {
-            $attr = [];
-            foreach ($offer->DISPLAY_PROPERTIES as $item) {
-                $attr[$item->NAME] = str_replace('\\','/', $item->VALUE);
+        if (empty($offers)) {
+            $sku = $document->first('meta[itemprop="sku"]')->getAttribute('content');
+            $topic = $document->first('meta[itemprop="name"]')->getAttribute('content');
+            if (empty($description)) {
+                $description = $document->first('meta[itemprop="description"]')->getAttribute('content');
             }
-
             $img = [];
-            foreach ($offer->SLIDER as $item) {
-                $img[] = self::HOME . $item->SRC;
+            foreach ($document->find('div.slides a') as $item) {
+                $img[] = self::HOME . $item->href;
             }
-
+            $attr = $additionalProperty;
             $ar[] = [
-                'sku' => $offer->ID,
-                'topic' => $offer->NAME,
+                'sku' => $sku,
+                'topic' => $topic,
                 'description' => $description,
                 'aImgLink' => $img,
                 'attr' => $attr,
-
             ];
+        } else {
+            foreach ($offers as $offer) {
+                $attr = [];
+                foreach ($offer->DISPLAY_PROPERTIES as $item) {
+                    $attr[$item->NAME] = str_replace('\\','/', $item->VALUE);
+                }
+
+                $img = [];
+                foreach ($offer->SLIDER as $item) {
+                    $img[] = self::HOME . $item->SRC;
+                }
+
+                $ar[] = [
+                    'sku' => $offer->ID,
+                    'topic' => $offer->NAME,
+                    'description' => $description,
+                    'aImgLink' => $img,
+                    'attr' => $additionalProperty + $attr,
+
+                ];
+            }
         }
 
         return $ar;
@@ -135,7 +157,11 @@ class ControllerExtensionModuleArserIc extends Arser
      */
     private function getOffers(Doc $document)
     {
-        $tmp = $document->first('script:contains(JCCatalogElement)')->text();
+        $tmp = $document->first('script:contains(JCCatalogElement)');
+        if (empty($tmp)) {
+            return [];
+        }
+        $tmp = $tmp->text();
         $startPos = mb_strpos($tmp, '{');
         $endPos = mb_strrpos($tmp, '}');
         $tmp = mb_substr($tmp, $startPos, $endPos - $startPos + 1);
@@ -155,5 +181,19 @@ class ControllerExtensionModuleArserIc extends Arser
     private function getDescription(Doc $document): string
     {
         return ($el = $document->first('div.preview_text')) ? $el->html() : '';
+    }
+
+    private function getAdditionalProperty(Doc $document)
+    {
+        $res = [];
+        $rows = $document->find('tr[itemprop="additionalProperty"]');
+        foreach ($rows as $row) {
+
+            $name = trim($row->first('td.char_name span')->text());
+            $value = trim($row->first('td.char_value span')->text());
+            $res[$name] = preg_replace("/[^,.0-9]/", '', $value);
+        }
+
+        return $res;
     }
 }

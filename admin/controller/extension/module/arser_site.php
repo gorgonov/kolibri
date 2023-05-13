@@ -2067,16 +2067,17 @@ class ControllerExtensionModuleArserSite extends Controller
             }
 
             try {
+                $sku = ($row['sku'] == $product_id) ? $prefix . '-' . $row['sku'] : $row['sku'];
                 //Указывая номера ячеек, заполняем страницу данными
                 $objPHPExcel->getSheetByName('Products')
                     ->setCellValue('A' . $i['Products'], $product_id)
                     ->setCellValue('B' . $i['Products'], $row['name'])
                     ->setCellValue('C' . $i['Products'], $row['category'])
-                    ->setCellValue('D' . $i['Products'], $prefix . '-' . $row['sku'])
+                    ->setCellValue('D' . $i['Products'], $sku)
                     ->setCellValue('E' . $i['Products'], $site['model'])
                     ->setCellValue('G' . $i['Products'], $site['jan'])
                     ->setCellValue('K' . $i['Products'], $row['quantity'])
-                    ->setCellValue('L' . $i['Products'], $prefix . '-' . $row['sku'])
+                    ->setCellValue('L' . $i['Products'], $sku)
                     ->setCellValue('M' . $i['Products'], $site['manufacturer'])
                     ->setCellValue('N' . $i['Products'], $imgname)
                     ->setCellValue('O' . $i['Products'], 'yes')
@@ -2319,13 +2320,13 @@ class ControllerExtensionModuleArserSite extends Controller
                     $aImg[$imgname] = $img;
                 }
 
-                $url = $img;
+                $url = $this->escapefile_url($img);
                 $path_img = $path . '/' . $imgname;
 
                 if (file_exists($path_img)) {
                     $log->write($row['sku'] . ' ' . $path_img . ' существует, пропускаем.');
                 } else {
-                    $img = @file_get_contents($url);
+                    $img = @file_get_contents(urlencode($url));
                     if (!$img) {
                         $img = @file_get_contents($this->myUrlEncode($url));
                     }
@@ -2341,7 +2342,7 @@ class ControllerExtensionModuleArserSite extends Controller
                         file_put_contents($path_img, $img);
                         $log->write($row['sku'] . ' ' . $path_img . ' Сохранен');
                     } else {
-                        $log->write($row['sku'] . ' ' . $path_img . " Ошибка загрузки файла {$url}!\n");
+                        $log->write($row['sku'] . ' ' . $path_img . " Ошибка загрузки файла {$url}\n");
                     }
                 }
             }
@@ -2611,5 +2612,17 @@ class ControllerExtensionModuleArserSite extends Controller
             $wSheet = $objPHPExcel->setActiveSheetIndex($key)->setTitle($item['name']);
             $wSheet->fromArray($item['headers'], null, 'A1');
         }
+    }
+
+    private function escapefile_url($url): string
+    {
+        $parts = parse_url($url);
+        $path_parts = array_map('rawurldecode', explode('/', $parts['path']));
+
+        return
+            $parts['scheme'] . '://' .
+            $parts['host'] .
+            implode('/', array_map('rawurlencode', $path_parts))
+            ;
     }
 }

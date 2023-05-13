@@ -13,7 +13,7 @@ class ControllerExtensionModuleArserSv extends Arser
     /**
      * раскрываем группы
      * добавим линки на продукты и удалим группу
-     * @param  array  $linkGroup
+     * @param array $linkGroup
      * @throws InvalidSelectorException
      */
     protected function parseGroup(array $linkGroup)
@@ -23,7 +23,7 @@ class ControllerExtensionModuleArserSv extends Arser
 
     /**
      * Получение ссылок на продукты (раскрываем группы)
-     * @param  Doc  $document
+     * @param Doc $document
      * @return array
      * @throws InvalidSelectorException
      */
@@ -47,7 +47,7 @@ class ControllerExtensionModuleArserSv extends Arser
 
     /**
      * Получаем информацию о продукте
-     * @param  array  $link
+     * @param array $link
      * @throws InvalidSelectorException
      */
     protected function parseProduct(array $link)
@@ -56,7 +56,6 @@ class ControllerExtensionModuleArserSv extends Arser
         $this->load->model('extension/module/arser_product');
 
         loadDidom();
-
         $url = $link['link'];
         $document = (new Doc($url, true));
         if (!$document) {
@@ -83,7 +82,7 @@ class ControllerExtensionModuleArserSv extends Arser
     }
 
     /**
-     * @param  Doc  $document
+     * @param Doc $document
      * @return array
      * @throws InvalidSelectorException
      */
@@ -92,24 +91,38 @@ class ControllerExtensionModuleArserSv extends Arser
         $ar = [];
 //        $description = $this->getDescription($document);
         $offers = $this->getOffers($document);
-        foreach ($offers as $offer) {
-            $img = [];
-            foreach ($offer->SLIDER as $item) {
-                $img[] = self::HOME . html_entity_decode($item->SRC);
-            }
+        if (!empty($offers)) {
+            foreach ($offers as $offer) {
+                $img = [];
+                foreach ($offer->SLIDER as $item) {
+                    $img[] = self::HOME . html_entity_decode($item->SRC);
+                }
 
-            $description = html_entity_decode($offer->DISPLAY_PROPERTIES);
+                $description = html_entity_decode($offer->DISPLAY_PROPERTIES);
+                $doc = new Doc($description);
+                $sku = $this->getSku($doc);
+                $attr = $this->getAttr($doc);
+
+                $ar[] = [
+                    'description' => $description,
+                    'sku' => $sku,
+                    'topic' => html_entity_decode($offer->NAME),
+                    'aImgLink' => $img,
+                    'attr' => $attr,
+                ];
+            }
+        } else {
+            $description = $this->getDescription($document);
             $doc = new Doc($description);
-            $sku = $this->getSku($doc);
+//            $sku = $this->getSku($doc);
             $attr = $this->getAttr($doc);
 
             $ar[] = [
                 'description' => $description,
-                'sku' => $sku,
-                'topic' => html_entity_decode($offer->NAME),
-                'aImgLink' => $img,
+//                'sku' => $sku,
+                'topic' => html_entity_decode($document->first('h1')->text()),
+                'aImgLink' => $this->getImg($document),
                 'attr' => $attr,
-
             ];
         }
 
@@ -117,7 +130,7 @@ class ControllerExtensionModuleArserSv extends Arser
     }
 
     /**
-     * @param  Doc  $document
+     * @param Doc $document
      * @return array
      * @throws InvalidSelectorException
      */
@@ -125,9 +138,9 @@ class ControllerExtensionModuleArserSv extends Arser
     {
         $res = [];
 
-        if ($slide = $document->find('.product-page__img-slider-item a')) {
+        if ($slide = $document->find('div.gallery-thumbs-img>img')) {
             foreach ($slide as $item) {
-                $res[] = $item->href;
+                $res[] = self::HOME . $item->src;
             }
         }
 
@@ -137,17 +150,26 @@ class ControllerExtensionModuleArserSv extends Arser
     }
 
     /**
-     * @param  Doc  $doc
+     * @param Doc $doc
      * @return string
      * @throws InvalidSelectorException
      */
     private function getDescription(Doc $doc): string
     {
-        return $doc->first('div.product-item-detail-tab-content')->html();
+        $elem = $doc->first('div.product-item-detail-tab-content');
+        if ($elem) {
+            return $elem->html();
+        }
+        $elem = $doc->first('div.product-info-content');
+        if ($elem) {
+            return $elem->html();
+        }
+
+        return '';
     }
 
     /**
-     * @param  string  $str
+     * @param string $str
      * @return array|false
      * @throws InvalidSelectorException
      */
@@ -186,17 +208,17 @@ class ControllerExtensionModuleArserSv extends Arser
     }
 
     /**
-     * @param  Doc  $doc
+     * @param Doc $doc
      * @param $attrName
-     * @param  false  $is_string
+     * @param false $is_string
      * @return array|false|string
      * @throws InvalidSelectorException
      */
     private function getAttribute(Doc $doc, $attrName, $is_string = false)
     {
-        $el = $doc->first("dt:contains({$attrName})");
+        $el = $doc->first("div:contains({$attrName})");
         if ($el) {
-            $res = $el->nextSibling('dd')->text();
+            $res = $el->nextSibling('div')->text();
             if ($is_string) {
                 return $res;
             } else {
@@ -214,7 +236,7 @@ class ControllerExtensionModuleArserSv extends Arser
     }
 
     /**
-     * @param  Doc  $document
+     * @param Doc $document
      * @return mixed
      * @throws InvalidSelectorException
      */
