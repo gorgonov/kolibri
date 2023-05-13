@@ -2,9 +2,10 @@
 
 use Arser\Arser;
 use DiDom\Document as Doc;
+use DiDom\Element;
 use DiDom\Exceptions\InvalidSelectorException;
 
-require_once(DIR_SYSTEM.'helper/arser.php');
+require_once(DIR_SYSTEM . 'helper/arser.php');
 
 class ControllerExtensionModuleArserOl extends Arser
 {
@@ -12,7 +13,7 @@ class ControllerExtensionModuleArserOl extends Arser
 
     /**
      * Получение ссылок на продукты (раскрываем группы)
-     * @param  Doc  $document
+     * @param Doc $document
      * @return array
      * @throws InvalidSelectorException
      */
@@ -35,7 +36,7 @@ class ControllerExtensionModuleArserOl extends Arser
 
     /**
      * Получаем информацию о продукте
-     * @param  array  $link
+     * @param array $link
      * @throws InvalidSelectorException
      */
     protected function parseProduct(array $link)
@@ -53,13 +54,14 @@ class ControllerExtensionModuleArserOl extends Arser
 
         // попытки прочитать "хорошую страницу, игнорируя сообщения безопасности"
         // костыль - часто возвращает «плохую» страницу
-        $sTmp = $document->first('h1.bx-title');
+        $sTmp = $document->first('h1.card__title1');
+
         while (!$sTmp) {
             // НЕУДАЧА. Ждем 5 секунд.
             sleep(5);
             $document = (new Doc($link['link'], true));
             if ($document) {
-                $sTmp = $document->first('h1.bx-title');
+                $sTmp = $document->first('h1.card__title1');
             }
         }
 
@@ -79,39 +81,53 @@ class ControllerExtensionModuleArserOl extends Arser
     }
 
     /**
-     * @param  Doc  $document
+     * @param Doc $document
      * @return array
      * @throws InvalidSelectorException
      */
-    private function getProductInfo(Doc $document): array
+    private function getProductInfoMulty(Doc $document): array
     {
+        $productName = $sTmp = $document->first('h1.card__title1')->text();
         $ar = [];
 
         // несколько продуктов на одной странице, отличаются цветом/материалом
-        $products = $document->find('div.detailed_color_wr input');
+        $products = $document->find('div.card__list1 div.card__col1');
 
         foreach ($products as $product) {
-            $topic = $product->attr('data-colorname') . ' (' . $product->attr('data-tsvet') . ')';
-            $sku = $product->attr('data-kodv1c');
+            $topic = $productName . ' (' . $product->attr('data-color') . ')';
+//            $sku = $product->attr('data-kodv1c');
 //            echo 'pagetype: ' . $product->attr('data-pagetype');
-            $id_offer = $product->attr('data-id_offer');
+            $id_offer = $product->attr('data-offer');
 
-            $sTmp = "div.bx_item_description[data-id_offer='{$id_offer}']";
+            $sTmp = "div.card-info__list1[data-offer_id='{$id_offer}']";
             $specifications = $document->first($sTmp);
             if (!empty($specifications)) {
                 $attr = $this->getAttributes($specifications);
             }
 
-            $description = $product->attr('data-description') . $specifications->innerHtml();
+            $popup = $document->first('div.card-info-item1__text1-popup');
+            while (!empty($popup)) {
+                $popup->remove();
+                $popup = $document->first('div.card-info-item1__text1-popup');
+            }
+            $popup = $document->first('div.card-info-item1__text1-popup-wrap');
+            while (!empty($popup)) {
+                $popup->remove();
+                $popup = $document->first('div.card-info-item1__text1-popup-wrap');
+            }
 
-            $sTmp = "div.detailed_l[data-id_offer='{$id_offer}'] .detailed_big-slider img";
+            $description = $document->first($sTmp)->html();
+            $description = $this->getDescription($id_offer);
+
+            $sTmp = "a.card__img-big.ibg.fancybox[data-fancybox='gallery{$id_offer}']";
+
             $aImgLink = [];  // список картинок для карусели
             $aImg = $document->find($sTmp);
 
             foreach ($aImg as $el) {
-                $src = $el->attr('src');
-                if (substr($src,0,1) == '/') {
-                    $src =  self::HOME . $src;
+                $src = $el->attr('href');
+                if (substr($src, 0, 1) == '/') {
+                    $src = self::HOME . $src;
                 }
                 if ($src <> '') {
                     $aImgLink [] = $src;
@@ -120,42 +136,175 @@ class ControllerExtensionModuleArserOl extends Arser
 
             $aImgLink = array_unique($aImgLink); // удалим дубли
 
-            $ar[] = compact('topic', 'sku', 'id_offer', 'description', 'aImgLink', 'attr', 'description');
+            $ar[] = compact('topic', 'id_offer', 'description', 'aImgLink', 'attr', 'description');
         }
 
         return $ar;
     }
 
+    private function getProductInfo(Doc $document): array
+    {
+        $productName = $document->first('h1.card__title1')->text();
+//        вариант 1 (короткий)
+        $element = $document->first('div.card-description1:not([class*="hidden"])');
+
+//        вариант 2 (длинный)
+//        $nodes = $document->find('div.card-description1');
+//        foreach ($nodes as $node) {
+//            $class = $node->getAttribute('class');
+//            if (strpos($class, 'hidden') == false) {
+//                $id_offer = $node->getAttribute('data-offer_id');
+//                break;
+//            }
+//        }
+
+        if ($element) {
+            $id_offer = $element->getAttribute('data-offer_id');
+        } else {
+            echo 'id_offer не найден';
+            die();
+        }
+
+        if (!isset($id_offer)) {
+            echo 'id_offer не найден';
+            die();
+        }
+        // дополним название цветом модели
+        $topic = $productName . ' (' . $document->first("div.card__col1[data-offer={$id_offer}]")->getAttribute('data-color') . ')';
+
+        $description = $this->getDescription($id_offer);
+        $specifications = $document->first(".card-info__list1[data-offer_id={$id_offer}]");
+
+        $element = $document->first('div.card__text1');
+        if ($element) {
+            $sku = $element->text();
+            $sku = 'П' . preg_replace('/[^0-9]/', '', $sku);
+        } else {
+            $sku = null;
+        }
+
+        $attr = [];
+        if (!empty($specifications)) {
+            $attr = $this->getAttributes($specifications);
+        }
+
+        $sTmp = "a.card__img-big.ibg.fancybox[data-fancybox='gallery{$id_offer}']";
+
+        $aImgLink = [];  // список картинок для карусели
+        $aImg = $document->find($sTmp);
+
+        foreach ($aImg as $el) {
+            $src = $el->attr('href');
+            if (substr($src, 0, 1) == '/') {
+                $src = self::HOME . $src;
+            }
+            if ($src <> '') {
+                $aImgLink [] = $src;
+            }
+        }
+
+        $aImgLink = array_unique($aImgLink); // удалим дубли
+
+        $ar[] = compact('topic', 'id_offer', 'description', 'aImgLink', 'attr', 'sku', 'description');
+
+        return $ar;
+    }
+
+    /**
+     * @param Doc $doc
+     * @param string $attrName
+     * @return array|null
+     * @throws InvalidSelectorException
+     */
+    private function getAttribute($doc, $attrName): ?array
+    {
+        $el = $doc->first('div.card-info-item1__text1:contains("' . $attrName . '")');
+        if ($el) {
+            return [
+                $attrName => digit($el->nextSibling('div')->text())
+            ];
+        }
+
+        return null;
+    }
+
     /**
      * @param $doc
      * @return array
+     * @throws InvalidSelectorException
      */
     private function getAttributes($doc): array
     {
         $attrs = [];
 
-        $el = $doc->first('span:contains("Высота")');
-        if ($el) {
-            $attrs['Высота'] = digit($el->text());
+        if ($attr = $this->getAttribute($doc, 'Высота')) {
+            $attrs = $attrs + $attr;
         }
 
-        $el = $doc->first('span:contains("Ширина")');
-        if ($el) {
-            $attrs['Ширина'] = digit($el->text());
+        if ($attr = $this->getAttribute($doc, 'Ширина')) {
+            $attrs = $attrs + $attr;
         }
-
-        $el = $doc->first('span:contains("Глубина")');
-        if ($el) {
-            $attrs['Глубина'] = digit($el->text());
+        if ($attr = $this->getAttribute($doc, 'Глубина')) {
+            $attrs = $attrs + $attr;
         }
-
-        $el = $doc->first('span:contains("Материал:")');
-        if ($el) {
-            $sTmp = trim($el->text());
-            $aTmp = explode(":", $sTmp);
-            $attrs["Материал"] = trim($aTmp[count($aTmp) - 1]);
-        }
+//        $el = $doc->first('span:contains("Материал:")');
+//        if ($el) {
+//            $sTmp = trim($el->text());
+//            $aTmp = explode(":", $sTmp);
+//            $attrs["Материал"] = trim($aTmp[count($aTmp) - 1]);
+//        }
 
         return $attrs;
+    }
+
+    private function getDescription($id_offer)
+    {
+        $html = $this->curlRequest($id_offer);
+
+        return $this->removeLinks($html);
+    }
+
+    private function curlRequest($id_offer)
+    {
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => 'https://olmeko.ru/ajax/get_offer_description.php?id=' . $id_offer,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_HTTPHEADER => array(
+                'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0',
+                'Accept: */*',
+                'Accept-Language: ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
+                'Accept-Encoding: gzip, deflate, br',
+                'X-Requested-With: XMLHttpRequest',
+                'Connection: keep-alive',
+            ),
+        ));
+
+        $response = curl_exec($curl);
+
+        curl_close($curl);
+
+        return $response;
+    }
+
+    private function removeLinks(string $html): string
+    {
+        $doc = new Doc($html);
+        $a = $doc->first('a');
+
+        while (!empty($a)) {
+            $text = $a->text();
+            $doc->find('a')[0]->replace(new Element('p', $text));
+            $a = $doc->first('a');
+        }
+
+        return $doc->html();
     }
 }

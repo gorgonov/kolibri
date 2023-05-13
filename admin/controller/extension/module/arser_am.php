@@ -278,15 +278,20 @@ class ControllerExtensionModuleArserAm extends Arser
         if ($attr = $this->getAttribute($str, 'глубина')) {
             $attrList = array_merge($attrList, $attr);
         }
+
         $pos = mb_strpos($str, 'Размер спального места');
         if ($pos !== false) {
             $str1 = mb_substr($str, $pos);
-            $attr1 = $this->getAttribute($str1, 'ширина');
-            $attr2 = $this->getAttribute($str1, 'длина');
-            $attr = [
-                'Размер спального места' =>
-                    $attr1['ширина'].'*'.$attr2['длина']
-            ];
+
+            $re = '/(ширина|Ширина|длина|Длина|Глубина|глубина):\s*(\d*)/m';
+            preg_match_all($re, $str1, $matches, PREG_PATTERN_ORDER, 0);
+            $res = implode('*',$matches[2]);
+            if (!empty($res)) {
+                $attr = [
+                    'Размер спального места' =>
+                        $res
+                ];
+            }
             $attrList = array_merge($attrList, $attr);
         }
 
@@ -307,7 +312,7 @@ class ControllerExtensionModuleArserAm extends Arser
         }
 
         $str1 = mb_substr($str, $pos, 30);
-        return [$attrName => (int)(explode(' ', $str1)[1])];
+        return [mb_strtolower($attrName) => (int)(explode(' ', $str1)[1])];
     }
 
     /**
