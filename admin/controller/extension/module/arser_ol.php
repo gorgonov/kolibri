@@ -169,19 +169,23 @@ class ControllerExtensionModuleArserOl extends Arser
             echo 'id_offer не найден';
             die();
         }
-        // дополним название цветом модели
-        $topic = $productName . ' (' . $document->first("div.card__col1[data-offer={$id_offer}]")->getAttribute('data-color') . ')';
+        $sku = null;
+        $element = $document->first("div.card__col1[data-offer={$id_offer}]");
+        if ($element) {
+            $topic = $productName . ' (' . $element->getAttribute('data-color') . ')';
+            $sku = $element->getAttribute('data-kod');
+        }
 
         $description = $this->getDescription($id_offer);
         $specifications = $document->first(".card-info__list1[data-offer_id={$id_offer}]");
 
-        $element = $document->first('div.card__text1');
-        if ($element) {
-            $sku = $element->text();
-            $sku = 'П' . preg_replace('/[^0-9]/', '', $sku);
-        } else {
-            $sku = null;
-        }
+//        $element = $document->first('div.card__text1');
+//        if ($element) {
+//            $sku = $element->text();
+//            $sku = 'П' . preg_replace('/[^0-9]/', '', $sku);
+//        } else {
+//            $sku = null;
+//        }
 
         $attr = [];
         if (!empty($specifications)) {
